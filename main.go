@@ -46,7 +46,7 @@ func main() {
 	args := os.Args[1:] // exclude executable name in os.Args[0]
 	err := cl.Process(args)
 	if err != nil {
-		cl.Help(err, "go-redisemu", args)
+		cl.Help(err, "go-treestore-server", args)
 	}
 }
 
