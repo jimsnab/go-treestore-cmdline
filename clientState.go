@@ -68,7 +68,7 @@ func newClientState(l lane.Lane, client TreeStoreClient, dispatcher *cmdDispatch
 		watches:     map[watchKey]uint64{},
 	}
 
-	cs.ts, _ = cs.tss.getDb(l, "default", true)
+	cs.ts, _ = cs.tss.getDb(l, "main", true)
 
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
@@ -234,7 +234,7 @@ func (cs *clientState) isBlocked() bool {
 }
 
 func (cs *clientState) dispatch(req rawRequest) (output []byte, err error) {
-	return cs.disp.dispatchHandler(cs.l, req.cmdName, req.input)
+	return cs.disp.dispatchHandler(cs.l, cs, req)
 }
 
 func (cs *clientState) setMultiInProgress(inProgress bool) {

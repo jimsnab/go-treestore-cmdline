@@ -6,8 +6,8 @@ import (
 
 type (
 	rawRequest struct {
-		cmdName string
-		input []byte
+		exact [][]byte
+		args  []string
 	}
 
 	clientStateEvent struct {
@@ -25,4 +25,3 @@ type (
 		ServerNow() time.Time
 	}
 )
-

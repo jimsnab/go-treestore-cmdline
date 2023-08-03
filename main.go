@@ -31,7 +31,6 @@ type (
 	}
 )
 
-
 func main() {
 	cl := cmdline.NewCommandLine()
 
@@ -53,16 +52,20 @@ func main() {
 func mainHandler(args cmdline.Values) error {
 	eng := mainEngine{args: args}
 
-	eng.start()
+	err := eng.start()
+	if err != nil {
+		return err
+	}
+
 	eng.waitForTermination()
 
 	return nil
 }
 
-func (eng *mainEngine) start() {
-	eng.l = lane.NewLogLane(context.Background())
+func (eng *mainEngine) start() error {
+	eng.l = lane.NewLogLaneWithCR(context.Background())
 
-	fmt.Printf("\n\nTreeStore server is now running\n\nPress any key to quit\n\n")
+	fmt.Printf("\n\nTreeStore server is now running\n\n")
 
 	isTrace := eng.args["--trace"].(bool)
 	if !isTrace {
@@ -82,7 +85,11 @@ func (eng *mainEngine) start() {
 	}
 
 	basePath := eng.args["file"].(string)
-	eng.tss = newTreeStoreSet(eng.l, basePath)
+	tss, err := newTreeStoreSet(eng.l, basePath)
+	if err != nil {
+		return err
+	}
+	eng.tss = tss
 
 	// launch termination monitiors
 	eng.canExit = make(chan struct{})
@@ -94,6 +101,8 @@ func (eng *mainEngine) start() {
 
 	// start accepting connections and processing them
 	eng.startServer()
+
+	return nil
 }
 
 func (eng *mainEngine) startTermination() {
@@ -150,17 +159,21 @@ func (eng *mainEngine) exitKeyMonitor() {
 	// triggered another way, this goroutine will leak. Go does
 	// not give a reasonable way to cancel a blocking I/O call.
 	go func() {
-		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		defer term.Restore(int(os.Stdin.Fd()), oldState)
+		stdin := int(os.Stdin.Fd())
+		if term.IsTerminal(stdin) {
+			fmt.Printf("Press any key to quit\n\n")
+			oldState, err := term.MakeRaw(stdin)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer term.Restore(stdin, oldState)
 
-		b := make([]byte, 1)
-		_, err = os.Stdin.Read(b)
-		if err == nil {
-			eng.startTermination()
+			b := make([]byte, 1)
+			_, err = os.Stdin.Read(b)
+			if err == nil {
+				eng.startTermination()
+			}
 		}
 	}()
 }
@@ -197,12 +210,13 @@ func (eng *mainEngine) startServer() {
 	} else {
 		eng.iface = fmt.Sprintf("%s:%d", eng.iface, eng.port)
 	}
+
 	eng.server, err = net.Listen("tcp", eng.iface)
 	if err != nil {
 		fmt.Println("Error listening: ", err.Error())
 		os.Exit(1)
 	}
-	eng.l.Infof("listening on %s\r", eng.server.Addr().String())
+	eng.l.Infof("listening on %s", eng.server.Addr().String())
 
 	dispatcher := newCmdDispatcher(eng.port, eng.iface, eng.tss)
 

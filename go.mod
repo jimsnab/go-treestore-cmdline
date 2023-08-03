@@ -3,9 +3,9 @@ module github.com/jimsnab/go-treestore-server
 go 1.20
 
 require (
-	github.com/jimsnab/go-cmdline v1.0.8
-	github.com/jimsnab/go-lane v1.2.0
-	github.com/jimsnab/go-treestore v0.0.0-20230801215548-38841b8663bc
+	github.com/jimsnab/go-cmdline v1.2.0
+	github.com/jimsnab/go-lane v1.3.0
+	github.com/jimsnab/go-treestore v0.0.0-20230803224155-3f1be9982994
 	golang.org/x/term v0.10.0
 )
 

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/jimsnab/go-lane"
 	"github.com/jimsnab/go-treestore"
@@ -17,11 +18,12 @@ type (
 		basePath string
 		dbs      map[string]*treestore.TreeStore
 		users    map[string]*treeStoreUser
+		dirty    atomic.Int32
 	}
 )
 
-func newTreeStoreSet(l lane.Lane, basePath string) *treeStoreSet {
-	tss := &treeStoreSet{
+func newTreeStoreSet(l lane.Lane, basePath string) (tss *treeStoreSet, err error) {
+	tss = &treeStoreSet{
 		basePath: basePath,
 		dbs:      map[string]*treestore.TreeStore{},
 		users:    map[string]*treeStoreUser{"default": newTreeStoreUser()},
@@ -29,6 +31,8 @@ func newTreeStoreSet(l lane.Lane, basePath string) *treeStoreSet {
 
 	tss.createDbUnlocked(l, "main")
 	if basePath != "" {
+		l.Tracef("loading database(s) from base path %s", basePath)
+
 		// Search the file system for persisted data, and load each data store
 		dir, fileBase := filepath.Split(basePath)
 		if dir == "" {
@@ -37,7 +41,7 @@ func newTreeStoreSet(l lane.Lane, basePath string) *treeStoreSet {
 
 		// data store files are <base-name>.<name>.db where <base-name> is user provided
 		// and <name> is the data store index.
-		filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if !d.IsDir() {
 				if strings.HasPrefix(d.Name(), fileBase) && strings.HasSuffix(d.Name(), ".db") {
 					name := d.Name()[len(fileBase):]
@@ -45,8 +49,10 @@ func newTreeStoreSet(l lane.Lane, basePath string) *treeStoreSet {
 					if len(name) > 0 {
 						// found a data store file - load it
 						ts, _ := tss.createDbUnlocked(l, name)
+						l.Tracef("loading database %s from %s", name, path)
 						loadErr := ts.Load(l, path)
 						if loadErr != nil {
+							l.Errorf("error loading %s: %s", path, err.Error())
 							return loadErr
 						}
 					}
@@ -55,15 +61,27 @@ func newTreeStoreSet(l lane.Lane, basePath string) *treeStoreSet {
 
 			return nil
 		})
+
+		if err != nil {
+			tss = nil
+			return
+		}
 	}
-	return tss
+
+	return
 }
 
 func (tss *treeStoreSet) save(l lane.Lane) error {
-	for index, ts := range tss.dbs {
-		err := ts.Save(l, tss.treeStoreFileName(index))
-		if err != nil {
-			return err
+	if tss.dirty.Swap(0) > 0 {
+		l.Trace("saving treestore set")
+		for index, ts := range tss.dbs {
+			filename := tss.treeStoreFileName(index)
+			l.Tracef("saving %s to %s", index, filename)
+			err := ts.Save(l, filename)
+			if err != nil {
+				l.Errorf("failed to save %s to %s: %s", index, filename, err.Error())
+				return err
+			}
 		}
 	}
 	return nil

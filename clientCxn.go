@@ -184,6 +184,8 @@ func (cc *clientCxn) onWaitForCommand() {
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
 			cc.cs.l.Debugf("read error from %s: %s", cc.cxn.RemoteAddr().String(), err)
+		} else {
+			cc.cs.l.Infof("client disconnected: %s", cc.cxn.RemoteAddr().String())
 		}
 		cc.queueStateChange(csTerminate, nil)
 		return
@@ -200,9 +202,12 @@ func (cc *clientCxn) onWaitForCommand() {
 	cmd, length := cc.parseCommand()
 	if length == 0 {
 		cc.queueStateChange(csWaitForCommand, nil)
-	} else {
+	} else if length > 0 {
 		cc.inbound = cc.inbound[length:]
 		cc.queueStateChange(csDispatchCommand, cmd)
+	} else {
+		cc.cs.l.Infof("malformed command sent from client - terminating")
+		cc.queueStateChange(csTerminate, nil)
 	}
 }
 
@@ -213,9 +218,19 @@ func (cc *clientCxn) parseCommand() (req rawRequest, length int) {
 	// packetSize uint32 big endian
 	// packet [packetSize]byte
 	//
-	// Inside the packet are two strings with a line separator:
+	// The packet is a command line with args separated with line breaks:
 	//
-	// "<cmdName>\n<input-json>"
+	// "<cmdName>\n<first arg>\n<second arg>"
+	//
+	// Args have value escaping and will be unescaped. Value escaping is
+	// simply \nn where nn is the hex byte value. For example, a set value
+	// command with a line break looks like this:
+	//
+	// fmt.Printf("setkv\n/some/value\nvalue having\\0Dtwo lines")
+	//
+	// 		setkv
+	//		/some/value
+	//      value having\0Dtwo lines
 	//
 
 	if len(cc.inbound) < 4 {
@@ -223,21 +238,27 @@ func (cc *clientCxn) parseCommand() (req rawRequest, length int) {
 	}
 
 	packetSize := binary.BigEndian.Uint32(cc.inbound)
-	if len(cc.inbound) - 4 < int(packetSize) {
+	if len(cc.inbound)-4 < int(packetSize) {
 		return
 	}
 
-	packet := cc.inbound[4:4 + packetSize]
-	cutPoint := bytes.IndexByte(packet, '\n')
+	packet := cc.inbound[4 : 4+packetSize]
+	escapedArgs := bytes.Split(packet, []byte("\n"))
 
-	if cutPoint < 0 {
-		cc.cs.l.Info("client packet was malformed - terminating the connection")
-		cc.queueStateChange(csTerminate, nil)
-		return
+	req = rawRequest{
+		exact: make([][]byte, 0, len(escapedArgs)),
+		args:  make([]string, 0, len(escapedArgs)),
 	}
 
-	req.cmdName = string(packet[0:cutPoint])
-	req.input = packet[cutPoint + 1:]
+	for _, escapedArg := range escapedArgs {
+		req.args = append(req.args, string(escapedArg))
+		if !bytes.Contains(escapedArg, []byte("\\")) {
+			req.exact = append(req.exact, escapedArg)
+		} else {
+			req.exact = append(req.exact, valueUnescape(string(escapedArg)))
+		}
+	}
+
 	length = 4 + int(packetSize)
 	return
 }
