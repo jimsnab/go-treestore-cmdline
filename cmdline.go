@@ -1,7 +1,6 @@
 package treestore_cmdline
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -63,7 +62,7 @@ type (
 		//
 		// In the JSON response, key paths will be path-escaped, and response values
 		// will be vaule-escaped.
-		StartServer(endpoint string, port int, persistPath string, trace bool) error
+		StartServer(endpoint string, port int, persistPath string) error
 
 		// Initiates server termination, if it is running.
 		StopServer() error
@@ -76,23 +75,19 @@ type (
 	}
 )
 
-func NewTreeStoreCmdLineServer() TreeStoreCmdLineServer {
-	eng := mainEngine{}
+func NewTreeStoreCmdLineServer(l lane.Lane) TreeStoreCmdLineServer {
+	eng := mainEngine{
+		l: l,
+	}
 	return &eng
 }
 
-func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string, trace bool) error {
+func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string) error {
 	eng.mu.Lock()
 	defer eng.mu.Unlock()
 
 	if eng.started {
 		return fmt.Errorf("already started")
-	}
-
-	eng.l = lane.NewLogLaneWithCR(context.Background())
-
-	if !trace {
-		eng.l.SetLogLevel(lane.LogLevelInfo)
 	}
 
 	if port != 0 {
