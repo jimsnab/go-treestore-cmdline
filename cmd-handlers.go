@@ -20,6 +20,12 @@ type (
 		cs       *clientState
 		req      rawRequest
 	}
+
+	levelKey struct {
+		Segment     string `json:"segment"`
+		HasValue    bool         `json:"has_value"`
+		HasChildren bool         `json:"has_children"`
+	}
 )
 
 func fnHelp(args cmdline.Values) (err error) {
@@ -383,7 +389,16 @@ func fnGetLevelKeys(args cmdline.Values) (err error) {
 
 	if keys != nil {
 		if args["--detailed"].(bool) {
-			ctx.response["keys"] = keys
+			wireKeys := make([]levelKey, 0, len(keys))
+			for _, k := range keys {
+				wk := levelKey{
+					Segment: treestore.TokenSegmentToString(k.Segment),
+					HasChildren: k.HasChildren,
+					HasValue: k.HasValue,
+				}
+				wireKeys = append(wireKeys, wk)
+			}
+			ctx.response["keys"] = wireKeys
 		} else {
 			segments := make([]string, 0, len(keys))
 			for _, k := range keys {
