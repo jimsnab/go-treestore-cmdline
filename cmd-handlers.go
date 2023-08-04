@@ -205,7 +205,7 @@ func fnSetEx(args cmdline.Values) (err error) {
 
 	bytes, valid := orgValue.([]byte)
 	if valid {
-		ctx.response["orgValue"] = bytesToEscapedValue(bytes)
+		ctx.response["orginal_value"] = bytesToEscapedValue(bytes)
 	}
 
 	ctx.cs.tss.dirty.Add(1)
@@ -235,7 +235,7 @@ func fnListKeys(args cmdline.Values) (err error) {
 	} else {
 		keypaths := make([]string, 0, len(keys))
 		for _, k := range keys {
-			keypaths = append(keypaths, string(k.Sk.Path))
+			keypaths = append(keypaths, string(k.Key))
 		}
 		ctx.response["keypaths"] = keypaths
 	}
@@ -405,7 +405,7 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 	} else {
 		data := make(map[string]string, len(vals))
 		for _, v := range vals {
-			data[string(v.Sk.Path)] = valueEscape(v.CurrentValue)
+			data[string(v.Key)] = valueEscape(v.CurrentValue)
 		}
 		ctx.response["key_values"] = data
 	}
