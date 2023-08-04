@@ -17,6 +17,7 @@ type (
 		l               lane.Lane
 		tss             *treeStoreSet
 		server          net.Listener
+		cxns            []net.Conn
 		exitSaver       chan struct{}
 		saverTerminated chan struct{}
 		canExit         chan struct{}
@@ -76,6 +77,7 @@ type (
 func NewTreeStoreCmdLineServer(l lane.Lane) TreeStoreCmdLineServer {
 	eng := mainEngine{
 		l: l,
+		cxns: []net.Conn{},
 	}
 	return &eng
 }
@@ -144,6 +146,14 @@ func (eng *mainEngine) onTerminate() {
 		// close the server and wait for all active connections to finish
 		eng.l.Tracef("closing server")
 		eng.server.Close()
+
+		eng.mu.Lock()
+		for _,cxn := range eng.cxns {
+			eng.l.Tracef("closing connection %s <-> %s", cxn.LocalAddr().String(), cxn.RemoteAddr().String())
+			cxn.Close()
+		}
+		eng.cxns = []net.Conn{}
+		eng.mu.Unlock()
 
 		eng.l.Infof("waiting for any open request connections to complete")
 		requestAllCxnClose()
@@ -214,6 +224,9 @@ func (eng *mainEngine) startServer() error {
 				}
 				break
 			}
+			eng.mu.Lock()
+			eng.cxns = append(eng.cxns, connection)
+			eng.mu.Unlock()
 			eng.l.Infof("client connected: %s", connection.RemoteAddr().String())
 			newClientCxn(eng.l, connection, dispatcher)
 		}
