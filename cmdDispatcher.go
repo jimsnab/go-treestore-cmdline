@@ -46,6 +46,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		fnSetEx,
 		"setex <string-key>?Sets a key path (key-escaped), offering several options",
 		"[--value <string-value>]?Sets a value (value-escaped) at the key path; if not specified an existing value is not modified",
+		"[--nil]?Sets the vaule to nil",
 		"[--mx]?Must-Exist flag: perform operation only if the value exists",
 		"[--nx]?Must-Not-Exist flag: perform operation only if the value doesn't exist",
 		"[--sec <string-sec>]?Sets TTL to the Unix epoch seconds (if positive) or relative number of seconds (if negative)",

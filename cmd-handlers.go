@@ -147,6 +147,10 @@ func fnSetEx(args cmdline.Values) (err error) {
 	flags := treestore.SetExFlags(0)
 	var value []byte
 	if args["--value"].(bool) {
+		if args["--nil"].(bool) {
+			err = fmt.Errorf("--value and --nil are mutually exclusive")
+			return
+		}
 		valArg := args["value"].(string)
 		for index, arg := range ctx.req.args {
 			if arg == valArg {
@@ -154,7 +158,7 @@ func fnSetEx(args cmdline.Values) (err error) {
 				break
 			}
 		}
-	} else {
+	} else if !args["--nil"].(bool) {
 		flags = flags | treestore.SetExNoValueUpdate
 	}
 
