@@ -197,7 +197,7 @@ func (cc *clientCxn) onWaitForCommand() {
 		cc.inbound = append(cc.inbound, buffer[0:n]...)
 	}
 
-	cc.cs.l.Tracef("received command data from client")
+	cc.cs.l.Tracef("received %d bytes of command data from client", len(cc.inbound))
 
 	cmd, length := cc.parseCommand()
 	if length == 0 {
