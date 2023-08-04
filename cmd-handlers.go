@@ -93,7 +93,10 @@ func fnSetKeyValue(args cmdline.Values) (err error) {
 	return
 }
 
-func bytesToEscapedValue(v []byte) string {
+func bytesToEscapedValue(v []byte) any {
+	if v == nil {
+		return nil
+	}
 	var sb strings.Builder
 	for _, by := range v {
 		if by < 32 || by == '\\' || by > 127 {
@@ -108,10 +111,10 @@ func bytesToEscapedValue(v []byte) string {
 func valueEscape(v any) string {
 	switch t := v.(type) {
 	case string:
-		return bytesToEscapedValue([]byte(t))
+		return bytesToEscapedValue([]byte(t)).(string)
 
 	case []byte:
-		return bytesToEscapedValue(t)
+		return bytesToEscapedValue(t).(string)
 
 	default:
 		return ""
@@ -278,7 +281,8 @@ func fnDeleteKey(args cmdline.Values) (err error) {
 
 	ctx.response["key_removed"] = keyRemoved
 	if valueRemoved {
-		ctx.response["original_value"] = valueEscape(orgVal)
+		by, _ := orgVal.([]byte)
+		ctx.response["original_value"] = bytesToEscapedValue(by)
 	}
 	if keyRemoved {
 		ctx.cs.tss.dirty.Add(1)
@@ -294,7 +298,8 @@ func fnDeleteKeyWithValue(args cmdline.Values) (err error) {
 	removed, orgVal := ctx.cs.ts.DeleteKeyWithValue(treestore.MakeStoreKeyFromPath(key), clean)
 
 	if removed {
-		ctx.response["original_value"] = valueEscape(orgVal)
+		by, _ := orgVal.([]byte)
+		ctx.response["original_value"] = bytesToEscapedValue(by)
 		ctx.cs.tss.dirty.Add(1)
 	}
 	return
@@ -318,7 +323,8 @@ func fnGetKeyValue(args cmdline.Values) (err error) {
 
 	ctx.response["key_exists"] = keyExists
 	if valExists {
-		ctx.response["value"] = valueEscape(val)
+		by, _ := val.([]byte)
+		ctx.response["value"] = bytesToEscapedValue(by)
 	}
 	return
 }
@@ -336,7 +342,8 @@ func fnGetKeyValueAtTime(args cmdline.Values) (err error) {
 	val, exists := ctx.cs.ts.GetKeyValueAtTime(treestore.MakeStoreKeyFromPath(key), when)
 
 	if exists {
-		ctx.response["value"] = valueEscape(val)
+		by, _ := val.([]byte)
+		ctx.response["value"] = bytesToEscapedValue(by)
 	}
 	return
 }
@@ -559,7 +566,9 @@ func fnGetRelationshipValue(args cmdline.Values) (err error) {
 	ctx.response["has_link"] = hasLink
 	if rv != nil {
 		ctx.response["key"] = rv.Sk.Path
-		ctx.response["value"] = valueEscape(rv.CurrentValue)
+
+		by, _ := rv.CurrentValue.([]byte)
+		ctx.response["value"] = bytesToEscapedValue(by)
 	}
 	return
 }
@@ -593,7 +602,8 @@ func fnKeyValueFromAddress(args cmdline.Values) (err error) {
 	if keyExists {
 		ctx.response["key"] = sk.Path
 		if valueExists {
-			ctx.response["value"] = valueEscape(val)
+			by, _ := val.([]byte)
+			ctx.response["value"] = bytesToEscapedValue(by)
 		}
 	}
 	return
