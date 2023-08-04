@@ -375,9 +375,8 @@ func fnGetLevelKeys(args cmdline.Values) (err error) {
 		limit = args["limit"].(int)
 	}
 
-	keys, count := ctx.cs.ts.GetLevelKeys(treestore.MakeStoreKeyFromPath(key), pattern, startAt, limit)
+	keys := ctx.cs.ts.GetLevelKeys(treestore.MakeStoreKeyFromPath(key), pattern, startAt, limit)
 
-	ctx.response["count"] = count
 	if keys != nil {
 		if args["--detailed"].(bool) {
 			ctx.response["keys"] = keys
