@@ -1,4 +1,4 @@
-package main
+package treestore_cmdline
 
 import (
 	"encoding/hex"

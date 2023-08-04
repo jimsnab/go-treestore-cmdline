@@ -1,23 +1,21 @@
-package main
+package treestore_cmdline
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
 	"time"
 
 	"github.com/jimsnab/go-cmdline"
 	"github.com/jimsnab/go-lane"
-	"golang.org/x/term"
 )
 
 type (
 	mainEngine struct {
 		mu              sync.Mutex
+		started         bool
 		args            cmdline.Values
 		l               lane.Lane
 		tss             *treeStoreSet
@@ -29,63 +27,85 @@ type (
 		port            int
 		iface           string
 	}
+
+	TreeStoreCmdLineServer interface {
+		// Starts a socket server using the specified network interface and port, maintaining
+		// state in persistPath.
+		//
+		// If endpoint is "", the server will listen on all network interfaces.
+		// If port is 0, the server will listen on port 6770.
+		// If persistPath is "", data will be maintained in memory only.
+		//
+		// persistPath specifies the base file name; each database name plus ".db" will
+		// be appended to this base.
+		//
+		// The commands sent to the server require the request format:
+		//
+		// <length> "<cmdname>\n<arg>\n<arg>\n"
+		//
+		// Where <length> is big-endian 32-bit length of the command line string.
+		// <arg> must be value-escaped, which means any byte < 32 must be sent as
+		// \xx (backslash and two character hex); and the backslash must be sent
+		// as \5C.
+		//
+		// A request key path must be path-escaped (\s for forward slash and \S for
+		// backslash), before being value-escaped. A key with a forward slash such
+		// as "first/second" is placed on the wire like this example:
+		//
+		// <length> "setk\nfirst\\5Cssecond\n"
+		//
+		// e.g. 00 00 00 15 73 65 74 6B 0A 66 69 72 73 74 5C 35 43 73 73 65 63 6F 6E 64 0A
+		//      <length 21> s  e  t  k  \n f  i  r  s  t  \  5  C  s  s  e  c  o  n  d  \n
+		//
+		// The response is a JSON structure, sent as:
+		//
+		// <length> "<json>"
+		//
+		// In the JSON response, key paths will be path-escaped, and response values
+		// will be vaule-escaped.
+		StartServer(endpoint string, port int, persistPath string, trace bool) error
+
+		// Initiates server termination, if it is running.
+		StopServer() error
+
+		// Waits for the server to stop
+		WaitForTermination()
+
+		// Returns the server address
+		ServerAddr() string
+	}
 )
 
-func main() {
-	cl := cmdline.NewCommandLine()
-
-	cl.RegisterCommand(
-		mainHandler,
-		"~ [<string-file>]?Runs a simple TreeStore server. Specify <file> to persist data to disk.",
-		"[--trace]?Enable trace logging",
-		"[--port <int-port>]?Specify the TCP port to listen on. The default is 6770.",
-		"[--endpoint <string-interface>]?Specify the network interface to listen on. The default is all network interfaces.",
-	)
-
-	args := os.Args[1:] // exclude executable name in os.Args[0]
-	err := cl.Process(args)
-	if err != nil {
-		cl.Help(err, "go-treestore-server", args)
-	}
+func NewTreeStoreCmdLineServer() TreeStoreCmdLineServer {
+	eng := mainEngine{}
+	return &eng
 }
 
-func mainHandler(args cmdline.Values) error {
-	eng := mainEngine{args: args}
+func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string, trace bool) error {
+	eng.mu.Lock()
+	defer eng.mu.Unlock()
 
-	err := eng.start()
-	if err != nil {
-		return err
+	if eng.started {
+		return fmt.Errorf("already started")
 	}
 
-	eng.waitForTermination()
-
-	return nil
-}
-
-func (eng *mainEngine) start() error {
 	eng.l = lane.NewLogLaneWithCR(context.Background())
 
-	fmt.Printf("\n\nTreeStore server is now running\n\n")
-
-	isTrace := eng.args["--trace"].(bool)
-	if !isTrace {
+	if !trace {
 		eng.l.SetLogLevel(lane.LogLevelInfo)
 	}
 
-	port := eng.args["port"].(int)
 	if port != 0 {
 		eng.port = port
 	} else {
 		eng.port = 6770
 	}
 
-	iface := eng.args["interface"].(string)
-	if iface != "" {
-		eng.iface = iface
+	if endpoint != "" {
+		eng.iface = endpoint
 	}
 
-	basePath := eng.args["file"].(string)
-	tss, err := newTreeStoreSet(eng.l, basePath)
+	tss, err := newTreeStoreSet(eng.l, persistPath)
 	if err != nil {
 		return err
 	}
@@ -93,30 +113,37 @@ func (eng *mainEngine) start() error {
 
 	// launch termination monitiors
 	eng.canExit = make(chan struct{})
-	eng.killSignalMonitor()
-	eng.exitKeyMonitor()
 
 	// launch periodic save goroutine
 	eng.periodicSave()
 
 	// start accepting connections and processing them
-	eng.startServer()
+	err = eng.startServer()
+	if err != nil {
+		return err
+	}
+	eng.started = true
 
 	return nil
 }
 
-func (eng *mainEngine) startTermination() {
+func (eng *mainEngine) StopServer() error {
 	// ensure only one termination
 	eng.mu.Lock()
+	if !eng.started {
+		eng.mu.Unlock()
+		return fmt.Errorf("not started")
+	}
+
 	isTerminating := eng.terminating
 	eng.terminating = true
 	eng.mu.Unlock()
 
-	if isTerminating {
-		return
+	if !isTerminating {
+		go func() { eng.onTerminate() }()
 	}
 
-	go func() { eng.onTerminate() }()
+	return nil
 }
 
 func (eng *mainEngine) onTerminate() {
@@ -142,42 +169,6 @@ func (eng *mainEngine) onTerminate() {
 	eng.canExit <- struct{}{}
 }
 
-func (eng *mainEngine) killSignalMonitor() {
-	// register a graceful termination handler
-	sigs := make(chan os.Signal, 10)
-	signal.Notify(sigs, os.Interrupt)
-
-	go func() {
-		sig := <-sigs
-		eng.l.Infof("termination %s signaled for %s", sig, eng.server.Addr().String())
-		eng.startTermination()
-	}()
-}
-
-func (eng *mainEngine) exitKeyMonitor() {
-	// Start a go routine to detect a keypress. Upon termination
-	// triggered another way, this goroutine will leak. Go does
-	// not give a reasonable way to cancel a blocking I/O call.
-	go func() {
-		stdin := int(os.Stdin.Fd())
-		if term.IsTerminal(stdin) {
-			fmt.Printf("Press any key to quit\n\n")
-			oldState, err := term.MakeRaw(stdin)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer term.Restore(stdin, oldState)
-
-			b := make([]byte, 1)
-			_, err = os.Stdin.Read(b)
-			if err == nil {
-				eng.startTermination()
-			}
-		}
-	}()
-}
-
 func (eng *mainEngine) periodicSave() {
 	// make a periodic save that will also ensure save upon termination
 	if eng.tss.basePath != "" {
@@ -201,7 +192,7 @@ func (eng *mainEngine) periodicSave() {
 	}
 }
 
-func (eng *mainEngine) startServer() {
+func (eng *mainEngine) startServer() error {
 	// establish socket service
 	var err error
 
@@ -213,8 +204,8 @@ func (eng *mainEngine) startServer() {
 
 	eng.server, err = net.Listen("tcp", eng.iface)
 	if err != nil {
-		fmt.Println("Error listening: ", err.Error())
-		os.Exit(1)
+		eng.l.Errorf("error listening: %s", err.Error())
+		return err
 	}
 	eng.l.Infof("listening on %s", eng.server.Addr().String())
 
@@ -234,10 +225,23 @@ func (eng *mainEngine) startServer() {
 			newClientCxn(eng.l, connection, dispatcher)
 		}
 	}()
+
+	return nil
 }
 
-func (eng *mainEngine) waitForTermination() {
+func (eng *mainEngine) WaitForTermination() {
 	// wait for server to quiesque
 	<-eng.canExit
 	eng.l.Info("finished serving requests")
+}
+
+func (eng *mainEngine) ServerAddr() string {
+	eng.mu.Lock()
+	defer eng.mu.Unlock()
+
+	if eng.server == nil {
+		return ""
+	}
+
+	return eng.server.Addr().String()
 }
