@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jimsnab/go-cmdline"
 	"github.com/jimsnab/go-lane"
 )
 
@@ -15,7 +14,6 @@ type (
 	mainEngine struct {
 		mu              sync.Mutex
 		started         bool
-		args            cmdline.Values
 		l               lane.Lane
 		tss             *treeStoreSet
 		server          net.Listener
