@@ -39,7 +39,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 
 	cd.cmdLine.RegisterCommand(
 		fnSetKeyValue,
-		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes less than 32 as hex form \\xx",
+		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes < 32 or > 127 as hex form \\xx",
 	)
 
 	cd.cmdLine.RegisterCommand(

@@ -223,8 +223,10 @@ func (cc *clientCxn) parseCommand() (req rawRequest, length int) {
 	// "<cmdName>\n<first arg>\n<second arg>"
 	//
 	// Args have value escaping and will be unescaped. Value escaping is
-	// simply \nn where nn is the hex byte value. For example, a set value
-	// command with a line break looks like this:
+	// simply \nn where nn is the hex byte value. Bytes < 32, > 127 and
+	// 0x5C (backslash) must be escaped.
+	//
+	// For example, a set value command with a line break looks like this:
 	//
 	// fmt.Printf("setkv\n/some/value\nvalue having\\0Dtwo lines")
 	//

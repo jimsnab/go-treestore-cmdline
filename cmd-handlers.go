@@ -96,7 +96,7 @@ func fnSetKeyValue(args cmdline.Values) (err error) {
 func bytesToEscapedValue(v []byte) string {
 	var sb strings.Builder
 	for _, by := range v {
-		if by < 32 || by == '\\' {
+		if by < 32 || by == '\\' || by > 127 {
 			sb.WriteString(fmt.Sprintf("\\%02X", by))
 		} else {
 			sb.WriteByte(by)
