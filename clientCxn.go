@@ -169,6 +169,7 @@ func (cc *clientCxn) onInitialize() {
 }
 
 func (cc *clientCxn) onWaitForCommand() {
+	// new buffer required every time because cc.inbound is a slice of this buffer, not a copy
 	buffer := make([]byte, 1024*8)
 
 	cc.mu.Lock()
