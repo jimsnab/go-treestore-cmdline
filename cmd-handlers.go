@@ -428,6 +428,12 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 	vals := ctx.cs.ts.GetMatchingKeyValues(skPattern, startAt, limit)
 
 	if args["--detailed"].(bool) {
+		// value-escape the value
+		for _,val := range vals {
+			if val.CurrentValue != nil {
+				val.CurrentValue = valueEscape(val.CurrentValue)
+			}
+		}
 		ctx.response["values"] = vals
 	} else {
 		data := make(map[string]string, len(vals))
