@@ -199,7 +199,7 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 			for _, by := range param {
 				if by == '\n' {
 					sb.WriteString(`\n`)
-				} else if by < 32 {
+				} else if by < 32 || by == '\\' || by > 127 {
 					sb.WriteString(fmt.Sprintf(`\%02X`, by))
 				} else {
 					sb.WriteByte(by)
