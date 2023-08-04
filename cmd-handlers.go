@@ -135,12 +135,10 @@ func valueUnescape(v string) []byte {
 		by := v[pos]
 		if by == '\\' && pos+2 < len(v) {
 			decoded, err := hex.DecodeString(string(v[pos+1 : pos+3]))
-			if err != nil {
-				unescaped = append(unescaped, by)
-				continue
+			if err == nil {
+				by = decoded[0]
+				pos += 2
 			}
-			by = decoded[0]
-			pos += 2
 		}
 		unescaped = append(unescaped, by)
 		pos++
