@@ -182,11 +182,13 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	cd.cmdLine.RegisterCommand(
 		fnExport,
 		"export <string-key>?Makes a JSON document from the tree store key",
+		"[--base64]?Export the JSON as base64",
 	)
 
 	cd.cmdLine.RegisterCommand(
 		fnImport,
 		"import <string-key> <string-json>?Loads the specified JSON and stores the data in the tree store",
+		"[--base64]?The JSON string is base64",
 	)
 
 	return cd

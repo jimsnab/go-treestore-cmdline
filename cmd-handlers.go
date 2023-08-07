@@ -1,6 +1,7 @@
 package treestore_cmdline
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -643,19 +644,32 @@ func fnExport(args cmdline.Values) (err error) {
 		return
 	}
 
-	var payload any
-	if err = json.Unmarshal(jsonData, &payload); err != nil {
-		return
+	if args["--base64"].(bool) {
+		ctx.response["base64"] = base64.StdEncoding.EncodeToString(jsonData)
+	} else {
+		var payload any
+		if err = json.Unmarshal(jsonData, &payload); err != nil {
+			return
+		}
+
+		ctx.response["data"] = payload
 	}
 
-	ctx.response["data"] = payload
 	return
 }
 
 func fnImport(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))
-	jsonData := args["json"].(string)
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
 
 	err = ctx.cs.ts.Import(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	return
