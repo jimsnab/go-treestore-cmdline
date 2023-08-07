@@ -672,5 +672,10 @@ func fnImport(args cmdline.Values) (err error) {
 	}
 
 	err = ctx.cs.ts.Import(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	if err != nil {
+		return
+	}
+
+	ctx.cs.tss.dirty.Add(1)
 	return
 }
