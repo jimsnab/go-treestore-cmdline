@@ -76,7 +76,7 @@ type (
 
 func NewTreeStoreCmdLineServer(l lane.Lane) TreeStoreCmdLineServer {
 	eng := mainEngine{
-		l: l,
+		l:    l,
 		cxns: []net.Conn{},
 	}
 	return &eng
@@ -148,7 +148,7 @@ func (eng *mainEngine) onTerminate() {
 		eng.server.Close()
 
 		eng.mu.Lock()
-		for _,cxn := range eng.cxns {
+		for _, cxn := range eng.cxns {
 			eng.l.Tracef("closing connection %s <-> %s", cxn.LocalAddr().String(), cxn.RemoteAddr().String())
 			cxn.Close()
 		}

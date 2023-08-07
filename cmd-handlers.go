@@ -25,8 +25,8 @@ type (
 
 	levelKey struct {
 		Segment     string `json:"segment"`
-		HasValue    bool         `json:"has_value"`
-		HasChildren bool         `json:"has_children"`
+		HasValue    bool   `json:"has_value"`
+		HasChildren bool   `json:"has_children"`
 	}
 )
 
@@ -392,9 +392,9 @@ func fnGetLevelKeys(args cmdline.Values) (err error) {
 			wireKeys := make([]levelKey, 0, len(keys))
 			for _, k := range keys {
 				wk := levelKey{
-					Segment: treestore.TokenSegmentToString(k.Segment),
+					Segment:     treestore.TokenSegmentToString(k.Segment),
 					HasChildren: k.HasChildren,
-					HasValue: k.HasValue,
+					HasValue:    k.HasValue,
 				}
 				wireKeys = append(wireKeys, wk)
 			}
@@ -431,7 +431,7 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 
 	if args["--detailed"].(bool) {
 		// value-escape the value
-		for _,val := range vals {
+		for _, val := range vals {
 			if val.CurrentValue != nil {
 				val.CurrentValue = valueEscape(val.CurrentValue)
 			}
