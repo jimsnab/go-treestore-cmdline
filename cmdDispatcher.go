@@ -179,6 +179,16 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"addrv <string-address>?Returns the key value for the specified address",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnExport,
+		"export <string-key>?Makes a JSON document from the tree store key",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnImport,
+		"import <string-key> <string-json>?Loads the specified JSON and stores the data in the tree store",
+	)
+
 	return cd
 }
 

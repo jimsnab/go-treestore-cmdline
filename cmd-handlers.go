@@ -2,6 +2,7 @@ package treestore_cmdline
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -575,6 +576,8 @@ func fnSetMetadataAttribute(args cmdline.Values) (err error) {
 
 	ctx.response["key_exists"] = keyExists
 	ctx.response["prior_value"] = priorVal
+
+	ctx.cs.tss.dirty.Add(1)
 	return
 }
 
@@ -628,5 +631,32 @@ func fnKeyValueFromAddress(args cmdline.Values) (err error) {
 			ctx.response["value"] = bytesToEscapedValue(by)
 		}
 	}
+	return
+}
+
+func fnExport(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	jsonData, err := ctx.cs.ts.Export(treestore.MakeStoreKeyFromPath(key))
+	if err != nil {
+		return
+	}
+
+	var payload any
+	if err = json.Unmarshal(jsonData, &payload); err != nil {
+		return
+	}
+
+	ctx.response["data"] = payload
+	return
+}
+
+func fnImport(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+	jsonData := args["json"].(string)
+
+	err = ctx.cs.ts.Import(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	return
 }
