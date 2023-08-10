@@ -191,6 +191,36 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"[--base64]?The JSON string is base64",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnGetKeyJson,
+		"getjson <string-key>?Returns the key tree in JSON format",
+		"[--base64]?The JSON string is base64",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnSetKeyJson,
+		"setjson <string-key> <string-json>?Creates or replaces the key tree using the JSON data specified",
+		"[--base64]?The JSON string is base64",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnCreateKeyJson,
+		"createjson <string-key> <string-json>?Creates the key tree using the JSON data specified; does not overwrite existing data",
+		"[--base64]?The JSON string is base64",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnReplaceKeyJson,
+		"replacejson <string-key> <string-json>?Replaces the key tree using the JSON data specified; requires existing data",
+		"[--base64]?The JSON string is base64",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnMergeJson,
+		"mergejson <string-key> <string-json>?Overlays the key tree using the JSON data specified into existing data (if any)",
+		"[--base64]?The JSON string is base64",
+	)
+
 	return cd
 }
 

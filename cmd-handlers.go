@@ -679,3 +679,117 @@ func fnImport(args cmdline.Values) (err error) {
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
+
+func fnGetKeyJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	jsonData, err := ctx.cs.ts.GetKeyAsJson(treestore.MakeStoreKeyFromPath(key))
+	if err != nil {
+		return
+	}
+
+	if args["--base64"].(bool) {
+		ctx.response["base64"] = base64.StdEncoding.EncodeToString(jsonData)
+	} else {
+		var payload any
+		if err = json.Unmarshal(jsonData, &payload); err != nil {
+			return
+		}
+
+		ctx.response["data"] = payload
+	}
+
+	return
+}
+
+func fnSetKeyJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
+
+	replaced, err := ctx.cs.ts.SetKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	if err != nil {
+		return
+	}
+
+	ctx.response["replaced"] = replaced
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
+
+func fnCreateKeyJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
+
+	created, err := ctx.cs.ts.CreateKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	if err != nil {
+		return
+	}
+
+	ctx.response["created"] = created
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
+
+func fnReplaceKeyJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
+
+	replaced, err := ctx.cs.ts.ReplaceKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	if err != nil {
+		return
+	}
+
+	ctx.response["replaced"] = replaced
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
+
+func fnMergeJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
+
+	err = ctx.cs.ts.MergeKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	if err != nil {
+		return
+	}
+
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
