@@ -732,6 +732,7 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 			}
 			kvm.CurrentValue = v
 			kvm.CurrentType = t
+			jsonVals = append(jsonVals, &kvm)
 		}
 		ctx.response["values"] = jsonVals
 	} else {
