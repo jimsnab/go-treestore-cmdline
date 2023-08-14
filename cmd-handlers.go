@@ -31,13 +31,23 @@ type (
 		HasChildren bool   `json:"has_children"`
 	}
 
+	keyMatchJson struct {
+		Key           treestore.TokenPath      `json:"key"`
+		Metadata      map[string]string        `json:"metadata,omitempty"`
+		HasValue      bool                     `json:"has_value"`
+		HasChildren   bool                     `json:"has_children"`
+		CurrentValue  string                   `json:"current_value,omitempty"`
+		CurrentType   string                   `json:"current_type,omitempty"`
+		Relationships []treestore.StoreAddress `json:"relationships,omitempty"`
+	}
+
 	keyValueMatchJson struct {
-		Key              treestore.TokenPath      `json:"key"`
-		Metadata         map[string]string        `json:"metadata,omitempty"`
-		HasChildren      bool                     `json:"has_children"`
-		CurrentValue     string                   `json:"current_value,omitempty"`
-		CurrentValueType string                   `json:"current_value_type,omitempty"`
-		Relationships    []treestore.StoreAddress `json:"relationships,omitempty"`
+		Key           treestore.TokenPath      `json:"key"`
+		Metadata      map[string]string        `json:"metadata,omitempty"`
+		HasChildren   bool                     `json:"has_children"`
+		CurrentValue  string                   `json:"current_value,omitempty"`
+		CurrentType   string                   `json:"current_type,omitempty"`
+		Relationships []treestore.StoreAddress `json:"relationships,omitempty"`
 	}
 )
 
@@ -399,7 +409,25 @@ func fnListKeys(args cmdline.Values) (err error) {
 	keys := ctx.cs.ts.GetMatchingKeys(skPattern, startAt, limit)
 
 	if args["--detailed"].(bool) {
-		ctx.response["keys"] = keys
+		kmj := make([]*keyMatchJson, 0, len(keys))
+		for _, key := range keys {
+			km := keyMatchJson{
+				Key:           key.Key,
+				Metadata:      key.Metadata,
+				HasValue:      key.HasValue,
+				HasChildren:   key.HasChildren,
+				Relationships: key.Relationships,
+			}
+
+			var v, t string
+			if v, t, err = nativeValueToCmdLine(key.CurrentValue); err != nil {
+				return
+			}
+			km.CurrentValue = v
+			km.CurrentType = t
+			kmj = append(kmj, &km)
+		}
+		ctx.response["keys"] = kmj
 	} else {
 		keypaths := make([]string, 0, len(keys))
 		for _, k := range keys {
@@ -698,14 +726,12 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 				HasChildren:   val.HasChildren,
 				Relationships: val.Relationships,
 			}
-			if val.CurrentValue != nil {
-				var v, t string
-				if v, t, err = nativeValueToCmdLine(val.CurrentValue); err != nil {
-					return
-				}
-				kvm.CurrentValue = v
-				kvm.CurrentValueType = t
+			var v, t string
+			if v, t, err = nativeValueToCmdLine(val.CurrentValue); err != nil {
+				return
 			}
+			kvm.CurrentValue = v
+			kvm.CurrentType = t
 		}
 		ctx.response["values"] = jsonVals
 	} else {
