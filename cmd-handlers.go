@@ -793,3 +793,16 @@ func fnMergeJson(args cmdline.Values) (err error) {
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
+
+func fnCalculateKeyValue(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+	expression := args["expression"].(string)
+
+	address, modified := ctx.cs.ts.CalculateKeyValue(treestore.MakeStoreKeyFromPath(key), expression)
+	if modified {
+		ctx.response["address"] = address
+		ctx.cs.tss.dirty.Add(1)
+	}
+	return
+}

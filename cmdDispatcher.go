@@ -221,6 +221,11 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"[--base64]?The JSON string is base64",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnCalculateKeyValue,
+		"calc <string-key> <string-expression>?Evaluates the specified expression and stores the result value in the specified key",
+	)
+
 	return cd
 }
 
