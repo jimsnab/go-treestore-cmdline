@@ -2,8 +2,10 @@ package treestore_cmdline
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -88,10 +90,140 @@ func fnSetKey(args cmdline.Values) (err error) {
 	return
 }
 
+func valueFromCmdLine(ctx *cmdContext, args cmdline.Values, exactIndex int) (val any, err error) {
+	value := ctx.req.exact[exactIndex]
+	valueType, _ := args["valueType"].(string)
+
+	switch valueType {
+	case "int":
+		if len(value) != 4 {
+			err = errors.New("invalid int value")
+			return
+		}
+		val = int(binary.BigEndian.Uint32(value))
+		return
+	case "int8":
+		if len(value) != 1 {
+			err = errors.New("invalid int8 value")
+			return
+		}
+		val = int8(value[0])
+		return
+	case "int16":
+		if len(value) != 2 {
+			err = errors.New("invalid int16 value")
+			return
+		}
+		val = int16(binary.BigEndian.Uint16(value))
+		return
+	case "int32":
+		if len(value) != 4 {
+			err = errors.New("invalid int32 value")
+			return
+		}
+		val = int32(binary.BigEndian.Uint32(value))
+		return
+	case "int64":
+		if len(value) != 8 {
+			err = errors.New("invalid int64 value")
+			return
+		}
+		val = int64(binary.BigEndian.Uint64(value))
+		return
+	case "uint":
+		if len(value) != 4 {
+			err = errors.New("invalid uint value")
+			return
+		}
+		val = binary.BigEndian.Uint32(value)
+		return
+	case "uint8":
+		if len(value) != 1 {
+			err = errors.New("invalid uint8 value")
+			return
+		}
+		val = int8(value[0])
+		return
+	case "uint16":
+		if len(value) != 2 {
+			err = errors.New("invalid uint16 value")
+			return
+		}
+		val = binary.BigEndian.Uint16(value)
+		return
+	case "uint32":
+		if len(value) != 4 {
+			err = errors.New("invalid uint32 value")
+			return
+		}
+		val = binary.BigEndian.Uint32(value)
+		return
+	case "uint64":
+		if len(value) != 8 {
+			err = errors.New("invalid uint64 value")
+			return
+		}
+		val = binary.BigEndian.Uint64(value)
+		return
+	case "float32":
+		var f64 float64
+		f64, err = strconv.ParseFloat(string(value), 32)
+		if err != nil {
+			return
+		}
+		val = float32(f64)
+		return
+	case "float64":
+		val, err = strconv.ParseFloat(string(value), 32)
+		if err != nil {
+			return
+		}
+		return
+	case "bool":
+		val, err = strconv.ParseBool(string(value))
+		if err != nil {
+			return
+		}
+		return
+	case "complex64":
+		var c128 complex128
+		c128, err = strconv.ParseComplex(string(value), 64)
+		if err != nil {
+			return
+		}
+		val = complex64(c128)
+		return
+	case "complex128":
+		val, err = strconv.ParseComplex(string(value), 128)
+		if err != nil {
+			return
+		}
+		return
+	case "string":
+		val = string(value)
+		return
+	case "":
+		val = value
+		return
+	}
+
+	if strings.HasPrefix(valueType, "json-") {
+		val = value
+		return
+	}
+
+	err = errors.New("unrecognized value type " + valueType)
+	return
+}
+
 func fnSetKeyValue(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))
-	value := ctx.req.exact[2]
+
+	value, err := valueFromCmdLine(ctx, args, 2)
+	if err != nil {
+		return
+	}
 
 	address, firstValue := ctx.cs.ts.SetKeyValue(treestore.MakeStoreKeyFromPath(key), value)
 	ctx.response["address"] = address
@@ -149,27 +281,8 @@ func valueUnescape(v string) []byte {
 	return unescaped
 }
 
-func fnSetEx(args cmdline.Values) (err error) {
-	ctx := args[""].(*cmdContext)
+func setEx(args cmdline.Values, ctx *cmdContext, value any, flags treestore.SetExFlags) (err error) {
 	key := treestore.TokenPath(args["key"].(string))
-
-	flags := treestore.SetExFlags(0)
-	var value []byte
-	if args["--value"].(bool) {
-		if args["--nil"].(bool) {
-			err = fmt.Errorf("--value and --nil are mutually exclusive")
-			return
-		}
-		valArg := args["value"].(string)
-		for index, arg := range ctx.req.args {
-			if arg == valArg {
-				value = ctx.req.exact[index]
-				break
-			}
-		}
-	} else if !args["--nil"].(bool) {
-		flags = flags | treestore.SetExNoValueUpdate
-	}
 
 	if args["--mx"].(bool) {
 		flags = flags | treestore.SetExMustExist
@@ -223,6 +336,47 @@ func fnSetEx(args cmdline.Values) (err error) {
 
 	ctx.cs.tss.dirty.Add(1)
 	return
+}
+
+func fnSetExStr(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	value := treestore.TokenPath(args["value"].(string))
+
+	return setEx(args, ctx, value, 0)
+}
+
+func fnSetExInt(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	value := args["value"].(int)
+
+	return setEx(args, ctx, value, 0)
+}
+
+func fnSetEx(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+
+	flags := treestore.SetExFlags(0)
+	var value any
+	if args["--value"].(bool) {
+		if args["--nil"].(bool) {
+			err = fmt.Errorf("--value and --nil are mutually exclusive")
+			return
+		}
+		valArg := args["value"].(string)
+		for index, arg := range ctx.req.args {
+			if arg == valArg {
+				value, err = valueFromCmdLine(ctx, args, index)
+				if err != nil {
+					return
+				}
+				break
+			}
+		}
+	} else if !args["--nil"].(bool) {
+		flags = flags | treestore.SetExNoValueUpdate
+	}
+
+	return setEx(args, ctx, value, flags)
 }
 
 func fnListKeys(args cmdline.Values) (err error) {
@@ -323,6 +477,82 @@ func fnGetKeyTtl(args cmdline.Values) (err error) {
 	return
 }
 
+func addValueToResponse(ctx *cmdContext, val any) (err error) {
+	switch t := val.(type) {
+	case []byte:
+		ctx.response["value"] = bytesToEscapedValue(t)
+
+	case string:
+		ctx.response["value"] = bytesToEscapedValue([]byte(t))
+		ctx.response["type"] = "string"
+
+	case int:
+		by := make([]byte, 4)
+		binary.BigEndian.PutUint32(by, uint32(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "int"
+	case int8:
+		by := []byte{byte(t)}
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "int8"
+	case int16:
+		by := make([]byte, 2)
+		binary.BigEndian.PutUint16(by, uint16(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "int16"
+	case int32:
+		by := make([]byte, 4)
+		binary.BigEndian.PutUint32(by, uint32(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "int32"
+	case int64:
+		by := make([]byte, 8)
+		binary.BigEndian.PutUint64(by, uint64(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "int64"
+
+	case uint:
+		by := make([]byte, 4)
+		binary.BigEndian.PutUint32(by, uint32(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "uint"
+	case uint8:
+		by := []byte{byte(t)}
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "uint8"
+	case uint16:
+		by := make([]byte, 2)
+		binary.BigEndian.PutUint16(by, uint16(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "uint16"
+	case uint32:
+		by := make([]byte, 4)
+		binary.BigEndian.PutUint32(by, uint32(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "uint32"
+	case uint64:
+		by := make([]byte, 8)
+		binary.BigEndian.PutUint64(by, uint64(t))
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = "uint64"
+
+	case float32, float64, bool, complex64, complex128:
+		str := fmt.Sprintf("%v", t)
+		ctx.response["value"] = bytesToEscapedValue([]byte(str))
+		ctx.response["type"] = fmt.Sprintf("%T", t)
+
+	default:
+		var by []byte
+		by, err = json.Marshal(t)
+		if err != nil {
+			return
+		}
+		ctx.response["value"] = bytesToEscapedValue(by)
+		ctx.response["type"] = fmt.Sprintf("json-%T", t)
+	}
+	return
+}
+
 func fnGetKeyValue(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))
@@ -331,8 +561,9 @@ func fnGetKeyValue(args cmdline.Values) (err error) {
 
 	ctx.response["key_exists"] = keyExists
 	if valExists {
-		by, _ := val.([]byte)
-		ctx.response["value"] = bytesToEscapedValue(by)
+		if err = addValueToResponse(ctx, val); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -350,8 +581,9 @@ func fnGetKeyValueAtTime(args cmdline.Values) (err error) {
 	val, exists := ctx.cs.ts.GetKeyValueAtTime(treestore.MakeStoreKeyFromPath(key), when)
 
 	if exists {
-		by, _ := val.([]byte)
-		ctx.response["value"] = bytesToEscapedValue(by)
+		if err = addValueToResponse(ctx, val); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -593,8 +825,9 @@ func fnGetRelationshipValue(args cmdline.Values) (err error) {
 	if rv != nil {
 		ctx.response["key"] = rv.Sk.Path
 
-		by, _ := rv.CurrentValue.([]byte)
-		ctx.response["value"] = bytesToEscapedValue(by)
+		if err = addValueToResponse(ctx, rv.CurrentValue); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -628,8 +861,9 @@ func fnKeyValueFromAddress(args cmdline.Values) (err error) {
 	if keyExists {
 		ctx.response["key"] = sk.Path
 		if valueExists {
-			by, _ := val.([]byte)
-			ctx.response["value"] = bytesToEscapedValue(by)
+			if err = addValueToResponse(ctx, val); err != nil {
+				return
+			}
 		}
 	}
 	return

@@ -60,7 +60,7 @@ type (
 		// <length> "<json>"
 		//
 		// In the JSON response, key paths will be path-escaped, and response values
-		// will be vaule-escaped.
+		// will be value-escaped.
 		StartServer(endpoint string, port int, persistPath string) error
 
 		// Initiates server termination, if it is running.

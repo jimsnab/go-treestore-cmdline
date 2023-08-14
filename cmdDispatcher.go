@@ -40,13 +40,35 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	cd.cmdLine.RegisterCommand(
 		fnSetKeyValue,
 		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes < 32 or > 127 as hex form \\xx",
+		"[--value-type <string-valueType]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnSetExStr,
+		"setstr <string-key> <string-value>?Convenience function that performs setex of a string value",
+		"[--mx]?Must-Exist flag: perform operation only if the value exists",
+		"[--nx]?Must-Not-Exist flag: perform operation only if the value doesn't exist",
+		"[--sec <string-sec>]?Sets TTL to the Unix epoch seconds (if positive) or relative number of seconds (if negative)",
+		"[--ns <string-ns>]?Sets TTL to the Unix epoch nanoseconds (if positive) or relative number of nanoseconds (if negative)",
+		"[--relationships <string-relationships>]?Associates a comma-separated list of store addresses with the key; the list can be an empty string",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnSetExInt,
+		"setint <string-key> <int-value>?Convenience function that performs setex of a 32-bit integer",
+		"[--mx]?Must-Exist flag: perform operation only if the value exists",
+		"[--nx]?Must-Not-Exist flag: perform operation only if the value doesn't exist",
+		"[--sec <string-sec>]?Sets TTL to the Unix epoch seconds (if positive) or relative number of seconds (if negative)",
+		"[--ns <string-ns>]?Sets TTL to the Unix epoch nanoseconds (if positive) or relative number of nanoseconds (if negative)",
+		"[--relationships <string-relationships>]?Associates a comma-separated list of store addresses with the key; the list can be an empty string",
 	)
 
 	cd.cmdLine.RegisterCommand(
 		fnSetEx,
 		"setex <string-key>?Sets a key path (key-escaped), offering several options",
 		"[--value <string-value>]?Sets a value (value-escaped) at the key path; if not specified an existing value is not modified",
-		"[--nil]?Sets the vaule to nil",
+		"[--value-type <string-valueType]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
+		"[--nil]?Sets the value to nil",
 		"[--mx]?Must-Exist flag: perform operation only if the value exists",
 		"[--nx]?Must-Not-Exist flag: perform operation only if the value doesn't exist",
 		"[--sec <string-sec>]?Sets TTL to the Unix epoch seconds (if positive) or relative number of seconds (if negative)",
