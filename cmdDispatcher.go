@@ -40,7 +40,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	cd.cmdLine.RegisterCommand(
 		fnSetKeyValue,
 		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes < 32 or > 127 as hex form \\xx",
-		"[--value-type <string-valueType]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
+		"[--value-type <string-valueType>]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
 	)
 
 	cd.cmdLine.RegisterCommand(
@@ -67,7 +67,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		fnSetEx,
 		"setex <string-key>?Sets a key path (key-escaped), offering several options",
 		"[--value <string-value>]?Sets a value (value-escaped) at the key path; if not specified an existing value is not modified",
-		"[--value-type <string-valueType]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
+		"[--value-type <string-valueType>]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
 		"[--nil]?Sets the value to nil",
 		"[--mx]?Must-Exist flag: perform operation only if the value exists",
 		"[--nx]?Must-Not-Exist flag: perform operation only if the value doesn't exist",
