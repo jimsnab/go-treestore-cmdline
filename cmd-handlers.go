@@ -30,6 +30,15 @@ type (
 		HasValue    bool   `json:"has_value"`
 		HasChildren bool   `json:"has_children"`
 	}
+
+	keyValueMatchJson struct {
+		Key              treestore.TokenPath      `json:"key"`
+		Metadata         map[string]string        `json:"metadata,omitempty"`
+		HasChildren      bool                     `json:"has_children"`
+		CurrentValue     string                   `json:"current_value,omitempty"`
+		CurrentValueType string                   `json:"current_value_type,omitempty"`
+		Relationships    []treestore.StoreAddress `json:"relationships,omitempty"`
+	}
 )
 
 func fnHelp(args cmdline.Values) (err error) {
@@ -94,6 +103,10 @@ func valueFromCmdLine(ctx *cmdContext, args cmdline.Values, exactIndex int) (val
 	value := ctx.req.exact[exactIndex]
 	valueType, _ := args["valueType"].(string)
 
+	return cmdLineToNativeValue(value, valueType)
+}
+
+func cmdLineToNativeValue(value []byte, valueType string) (val any, err error) {
 	switch valueType {
 	case "int":
 		if len(value) != 4 {
@@ -233,9 +246,9 @@ func fnSetKeyValue(args cmdline.Values) (err error) {
 	return
 }
 
-func bytesToEscapedValue(v []byte) any {
+func bytesToEscapedValue(v []byte) string {
 	if v == nil {
-		return nil
+		return ""
 	}
 	var sb strings.Builder
 	for _, by := range v {
@@ -246,19 +259,6 @@ func bytesToEscapedValue(v []byte) any {
 		}
 	}
 	return sb.String()
-}
-
-func valueEscape(v any) string {
-	switch t := v.(type) {
-	case string:
-		return bytesToEscapedValue([]byte(t)).(string)
-
-	case []byte:
-		return bytesToEscapedValue(t).(string)
-
-	default:
-		return ""
-	}
 }
 
 func valueUnescape(v string) []byte {
@@ -329,9 +329,10 @@ func setEx(args cmdline.Values, ctx *cmdContext, value any, flags treestore.SetE
 	ctx.response["address"] = address
 	ctx.response["exists"] = exists
 
-	bytes, valid := orgValue.([]byte)
-	if valid {
-		ctx.response["orginal_value"] = bytesToEscapedValue(bytes)
+	if orgValue != nil {
+		if err = addValueToResponse(ctx, orgValue, "original"); err != nil {
+			return
+		}
 	}
 
 	ctx.cs.tss.dirty.Add(1)
@@ -441,8 +442,10 @@ func fnDeleteKey(args cmdline.Values) (err error) {
 
 	ctx.response["key_removed"] = keyRemoved
 	if valueRemoved {
-		by, _ := orgVal.([]byte)
-		ctx.response["original_value"] = bytesToEscapedValue(by)
+		if err = addValueToResponse(ctx, orgVal, "original"); err != nil {
+			return
+		}
+		ctx.cs.tss.dirty.Add(1)
 	}
 	if keyRemoved {
 		ctx.cs.tss.dirty.Add(1)
@@ -458,8 +461,9 @@ func fnDeleteKeyWithValue(args cmdline.Values) (err error) {
 	removed, orgVal := ctx.cs.ts.DeleteKeyWithValue(treestore.MakeStoreKeyFromPath(key), clean)
 
 	if removed {
-		by, _ := orgVal.([]byte)
-		ctx.response["original_value"] = bytesToEscapedValue(by)
+		if err = addValueToResponse(ctx, orgVal, "original"); err != nil {
+			return
+		}
 		ctx.cs.tss.dirty.Add(1)
 	}
 	return
@@ -477,69 +481,92 @@ func fnGetKeyTtl(args cmdline.Values) (err error) {
 	return
 }
 
-func addValueToResponse(ctx *cmdContext, val any) (err error) {
+func addValueToResponse(ctx *cmdContext, val any, prefix string) (err error) {
+	var vk, vt string
+	if prefix != "" {
+		vk = prefix + "_value"
+		vt = prefix + "_type"
+	} else {
+		vk = "value"
+		vt = "type"
+	}
+
+	ev, et, err := nativeValueToCmdLine(val)
+	if err != nil {
+		return
+	}
+
+	ctx.response[vk] = ev
+	ctx.response[vt] = et
+	return
+}
+
+func nativeValueToCmdLine(val any) (encodedVal, encodedType string, err error) {
 	switch t := val.(type) {
 	case []byte:
-		ctx.response["value"] = bytesToEscapedValue(t)
+		encodedVal = bytesToEscapedValue(t)
 
 	case string:
-		ctx.response["value"] = bytesToEscapedValue([]byte(t))
-		ctx.response["type"] = "string"
+		encodedVal = bytesToEscapedValue([]byte(t))
+		encodedType = "string"
 
 	case int:
 		by := make([]byte, 4)
 		binary.BigEndian.PutUint32(by, uint32(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "int"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "int"
 	case int8:
 		by := []byte{byte(t)}
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "int8"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "int8"
 	case int16:
 		by := make([]byte, 2)
 		binary.BigEndian.PutUint16(by, uint16(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "int16"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "int16"
 	case int32:
 		by := make([]byte, 4)
 		binary.BigEndian.PutUint32(by, uint32(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "int32"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "int32"
 	case int64:
 		by := make([]byte, 8)
 		binary.BigEndian.PutUint64(by, uint64(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "int64"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "int64"
 
 	case uint:
 		by := make([]byte, 4)
 		binary.BigEndian.PutUint32(by, uint32(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "uint"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "uint"
 	case uint8:
 		by := []byte{byte(t)}
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "uint8"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "uint8"
 	case uint16:
 		by := make([]byte, 2)
 		binary.BigEndian.PutUint16(by, uint16(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "uint16"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "uint16"
 	case uint32:
 		by := make([]byte, 4)
 		binary.BigEndian.PutUint32(by, uint32(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "uint32"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "uint32"
 	case uint64:
 		by := make([]byte, 8)
 		binary.BigEndian.PutUint64(by, uint64(t))
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = "uint64"
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = "uint64"
 
 	case float32, float64, bool, complex64, complex128:
 		str := fmt.Sprintf("%v", t)
-		ctx.response["value"] = bytesToEscapedValue([]byte(str))
-		ctx.response["type"] = fmt.Sprintf("%T", t)
+		encodedVal = bytesToEscapedValue([]byte(str))
+		encodedType = fmt.Sprintf("%T", t)
+
+	case nil:
+		encodedType = "nil"
 
 	default:
 		var by []byte
@@ -547,8 +574,8 @@ func addValueToResponse(ctx *cmdContext, val any) (err error) {
 		if err != nil {
 			return
 		}
-		ctx.response["value"] = bytesToEscapedValue(by)
-		ctx.response["type"] = fmt.Sprintf("json-%T", t)
+		encodedVal = bytesToEscapedValue(by)
+		encodedType = fmt.Sprintf("json-%T", t)
 	}
 	return
 }
@@ -561,7 +588,7 @@ func fnGetKeyValue(args cmdline.Values) (err error) {
 
 	ctx.response["key_exists"] = keyExists
 	if valExists {
-		if err = addValueToResponse(ctx, val); err != nil {
+		if err = addValueToResponse(ctx, val, ""); err != nil {
 			return
 		}
 	}
@@ -581,7 +608,7 @@ func fnGetKeyValueAtTime(args cmdline.Values) (err error) {
 	val, exists := ctx.cs.ts.GetKeyValueAtTime(treestore.MakeStoreKeyFromPath(key), when)
 
 	if exists {
-		if err = addValueToResponse(ctx, val); err != nil {
+		if err = addValueToResponse(ctx, val, ""); err != nil {
 			return
 		}
 	}
@@ -663,16 +690,34 @@ func fnListKeyValues(args cmdline.Values) (err error) {
 
 	if args["--detailed"].(bool) {
 		// value-escape the value
+		jsonVals := make([]*keyValueMatchJson, 0, len(vals))
 		for _, val := range vals {
+			kvm := keyValueMatchJson{
+				Key:           val.Key,
+				Metadata:      val.Metadata,
+				HasChildren:   val.HasChildren,
+				Relationships: val.Relationships,
+			}
 			if val.CurrentValue != nil {
-				val.CurrentValue = valueEscape(val.CurrentValue)
+				var v, t string
+				if v, t, err = nativeValueToCmdLine(val.CurrentValue); err != nil {
+					return
+				}
+				kvm.CurrentValue = v
+				kvm.CurrentValueType = t
 			}
 		}
-		ctx.response["values"] = vals
+		ctx.response["values"] = jsonVals
 	} else {
 		data := make(map[string]string, len(vals))
-		for _, v := range vals {
-			data[string(v.Key)] = valueEscape(v.CurrentValue)
+		for _, val := range vals {
+			var jsonVal string
+			if val.CurrentValue != nil {
+				if jsonVal, _, err = nativeValueToCmdLine(val.CurrentValue); err != nil {
+					return
+				}
+			}
+			data[string(val.Key)] = jsonVal
 		}
 		ctx.response["key_values"] = data
 	}
@@ -825,7 +870,7 @@ func fnGetRelationshipValue(args cmdline.Values) (err error) {
 	if rv != nil {
 		ctx.response["key"] = rv.Sk.Path
 
-		if err = addValueToResponse(ctx, rv.CurrentValue); err != nil {
+		if err = addValueToResponse(ctx, rv.CurrentValue, ""); err != nil {
 			return
 		}
 	}
@@ -861,7 +906,7 @@ func fnKeyValueFromAddress(args cmdline.Values) (err error) {
 	if keyExists {
 		ctx.response["key"] = sk.Path
 		if valueExists {
-			if err = addValueToResponse(ctx, val); err != nil {
+			if err = addValueToResponse(ctx, val, ""); err != nil {
 				return
 			}
 		}
