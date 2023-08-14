@@ -497,6 +497,19 @@ func fnDeleteKeyWithValue(args cmdline.Values) (err error) {
 	return
 }
 
+func fnDeleteKeyTree(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	removed := ctx.cs.ts.DeleteKeyTree(treestore.MakeStoreKeyFromPath(key))
+
+	ctx.response["removed"] = removed
+	if removed {
+		ctx.cs.tss.dirty.Add(1)
+	}
+	return
+}
+
 func fnGetKeyTtl(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))

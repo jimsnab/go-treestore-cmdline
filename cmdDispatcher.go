@@ -106,6 +106,11 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	)
 
 	cd.cmdLine.RegisterCommand(
+		fnDeleteKeyTree,
+		"deltree <string-key>?Removes the key path, including its data and children",
+	)
+
+	cd.cmdLine.RegisterCommand(
 		fnGetKeyTtl,
 		"ttlk <string-key>?Gets the Unix epoch timestamp in nanoseconds of when the key will expire, or 0 if it has no expiration",
 	)
