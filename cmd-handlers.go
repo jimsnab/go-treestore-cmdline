@@ -1105,9 +1105,10 @@ func fnCalculateKeyValue(args cmdline.Values) (err error) {
 	key := treestore.TokenPath(args["key"].(string))
 	expression := args["expression"].(string)
 
-	address, modified := ctx.cs.ts.CalculateKeyValue(treestore.MakeStoreKeyFromPath(key), expression)
-	if modified {
+	address, newVal := ctx.cs.ts.CalculateKeyValue(treestore.MakeStoreKeyFromPath(key), expression)
+	if newVal != nil {
 		ctx.response["address"] = address
+		addValueToResponse(ctx, newVal, "")
 		ctx.cs.tss.dirty.Add(1)
 	}
 	return
