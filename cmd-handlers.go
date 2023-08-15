@@ -910,8 +910,10 @@ func fnGetRelationshipValue(args cmdline.Values) (err error) {
 	if rv != nil {
 		ctx.response["key"] = rv.Sk.Path
 
-		if err = addValueToResponse(ctx, rv.CurrentValue, ""); err != nil {
-			return
+		if rv.CurrentValue != nil {
+			if err = addValueToResponse(ctx, rv.CurrentValue, ""); err != nil {
+				return
+			}
 		}
 	}
 	return
