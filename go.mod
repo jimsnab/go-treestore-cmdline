@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/jimsnab/go-cmdline v1.2.0
 	github.com/jimsnab/go-lane v1.4.0
-	github.com/jimsnab/go-treestore v0.0.0-20230815131827-77e7f91433b3
+	github.com/jimsnab/go-treestore v0.0.0-20230815133802-72c19e839129
 )
 
 require (

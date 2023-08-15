@@ -1035,12 +1035,13 @@ func fnSetKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	replaced, err := ctx.cs.ts.SetKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	replaced, addr, err := ctx.cs.ts.SetKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	if err != nil {
 		return
 	}
 
 	ctx.response["replaced"] = replaced
+	ctx.response["address"] = addr
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
@@ -1058,12 +1059,14 @@ func fnCreateKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	created, err := ctx.cs.ts.CreateKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	created, addr, err := ctx.cs.ts.CreateKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	if err != nil {
 		return
 	}
 
-	ctx.response["created"] = created
+	if created {
+		ctx.response["address"] = addr
+	}
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
@@ -1081,12 +1084,14 @@ func fnReplaceKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	replaced, err := ctx.cs.ts.ReplaceKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	replaced, addr, err := ctx.cs.ts.ReplaceKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	if err != nil {
 		return
 	}
 
-	ctx.response["replaced"] = replaced
+	if replaced {
+		ctx.response["address"] = addr
+	}
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
@@ -1104,11 +1109,12 @@ func fnMergeJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	err = ctx.cs.ts.MergeKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	addr, err := ctx.cs.ts.MergeKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
 	if err != nil {
 		return
 	}
 
+	ctx.response["address"] = addr
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
