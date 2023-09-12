@@ -253,6 +253,12 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"calc <string-key> <string-expression>?Evaluates the specified expression and stores the result value in the specified key",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnMoveKey,
+		"mv <string-src> <string-dest>?Moves the source key to the destination in an atomic operation",
+		"[--overwrite]?Overwrite the destination, if it exists",
+	)
+
 	return cd
 }
 

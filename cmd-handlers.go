@@ -1134,3 +1134,20 @@ func fnCalculateKeyValue(args cmdline.Values) (err error) {
 	}
 	return
 }
+
+func fnMoveKey(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	sk := treestore.TokenPath(args["src"].(string))
+	dk := treestore.TokenPath(args["dest"].(string))
+	oflag := args["--overwrite"].(bool)
+
+	exists, moved := ctx.cs.ts.MoveKey(treestore.MakeStoreKeyFromPath(sk), treestore.MakeStoreKeyFromPath(dk), oflag)
+	if err != nil {
+		return
+	}
+
+	ctx.response["exists"] = exists
+	ctx.response["moved"] = moved
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
