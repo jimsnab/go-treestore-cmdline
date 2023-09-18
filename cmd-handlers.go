@@ -1005,7 +1005,12 @@ func fnGetKeyJson(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))
 
-	jsonData, err := ctx.cs.ts.GetKeyAsJson(treestore.MakeStoreKeyFromPath(key))
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	jsonData, err := ctx.cs.ts.GetKeyAsJson(treestore.MakeStoreKeyFromPath(key), opts)
 	if err != nil {
 		return
 	}
@@ -1037,7 +1042,12 @@ func fnSetKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	replaced, addr, err := ctx.cs.ts.SetKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	replaced, addr, err := ctx.cs.ts.SetKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData), opts)
 	if err != nil {
 		return
 	}
@@ -1061,7 +1071,12 @@ func fnCreateKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	created, addr, err := ctx.cs.ts.CreateKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	created, addr, err := ctx.cs.ts.CreateKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData), opts)
 	if err != nil {
 		return
 	}
@@ -1086,7 +1101,12 @@ func fnReplaceKeyJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	replaced, addr, err := ctx.cs.ts.ReplaceKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	replaced, addr, err := ctx.cs.ts.ReplaceKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData), opts)
 	if err != nil {
 		return
 	}
@@ -1111,7 +1131,12 @@ func fnMergeJson(args cmdline.Values) (err error) {
 		jsonData = []byte(args["json"].(string))
 	}
 
-	addr, err := ctx.cs.ts.MergeKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData))
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	addr, err := ctx.cs.ts.MergeKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData), opts)
 	if err != nil {
 		return
 	}
