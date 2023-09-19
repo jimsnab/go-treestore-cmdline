@@ -1205,7 +1205,17 @@ func fnMoveReferencedKey(args cmdline.Values) (err error) {
 		refs = append(refs, treestore.MakeStoreKeyFromPath(treestore.TokenPath(ref)))
 	}
 
-	exists, moved := ctx.cs.ts.MoveReferencedKey(treestore.MakeStoreKeyFromPath(sk), treestore.MakeStoreKeyFromPath(dk), oflag, expireNs, refs)
+	unrefArgs, specified := args["unref"].([]string)
+	if !specified {
+		unrefArgs = []string{}
+	}
+	unrefs := make([]treestore.StoreKey, 0, len(unrefArgs))
+
+	for _, unref := range unrefArgs {
+		unrefs = append(unrefs, treestore.MakeStoreKeyFromPath(treestore.TokenPath(unref)))
+	}
+
+	exists, moved := ctx.cs.ts.MoveReferencedKey(treestore.MakeStoreKeyFromPath(sk), treestore.MakeStoreKeyFromPath(dk), oflag, expireNs, refs, unrefs)
 	if err != nil {
 		return
 	}
