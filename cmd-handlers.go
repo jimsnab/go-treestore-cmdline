@@ -1195,7 +1195,10 @@ func fnMoveReferencedKey(args cmdline.Values) (err error) {
 		}
 	}
 
-	refArgs := args["ref"].([]string)
+	refArgs, specified := args["ref"].([]string)
+	if !specified {
+		refArgs = []string{}
+	}
 	refs := make([]treestore.StoreKey, 0, len(refArgs))
 
 	for _, ref := range refArgs {
