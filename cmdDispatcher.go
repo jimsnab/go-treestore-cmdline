@@ -267,7 +267,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	cd.cmdLine.RegisterCommand(
 		fnMoveReferencedKey,
 		"mvref <string-src> <string-dest>?Moves the source key to the destination in an atomic operation",
-		"*--ref <string-ref>?Specifies a reference key that maintains a relationship to dest (multiple --ref args are supported)",
+		"*[--ref <string-ref>]?Specifies a reference key that maintains a relationship to dest (multiple --ref args are supported)",
 		"[--sec <string-sec>]?Assigns dest and ref key TTL to the Unix epoch seconds (if positive) or relative number of seconds (if negative)",
 		"[--ns <string-ns>]?Assigns dest and ref key TTL to the Unix epoch nanoseconds (if positive) or relative number of nanoseconds (if negative)",
 		"[--overwrite]?Overwrite the destination, if it exists",
