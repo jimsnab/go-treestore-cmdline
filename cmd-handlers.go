@@ -443,7 +443,7 @@ func fnClearKeyMetadata(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	key := treestore.TokenPath(args["key"].(string))
 
-	ctx.cs.ts.ClearKeyMetdata(treestore.MakeStoreKeyFromPath(key))
+	ctx.cs.ts.ClearKeyMetadata(treestore.MakeStoreKeyFromPath(key))
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
@@ -453,7 +453,7 @@ func fnClearMetadataAttribute(args cmdline.Values) (err error) {
 	key := treestore.TokenPath(args["key"].(string))
 	attribute := args["attribute"].(string)
 
-	attribExists, orgVal := ctx.cs.ts.ClearMetdataAttribute(treestore.MakeStoreKeyFromPath(key), attribute)
+	attribExists, orgVal := ctx.cs.ts.ClearMetadataAttribute(treestore.MakeStoreKeyFromPath(key), attribute)
 
 	if attribExists {
 		ctx.response["original_value"] = orgVal
@@ -1167,6 +1167,42 @@ func fnMoveKey(args cmdline.Values) (err error) {
 	oflag := args["--overwrite"].(bool)
 
 	exists, moved := ctx.cs.ts.MoveKey(treestore.MakeStoreKeyFromPath(sk), treestore.MakeStoreKeyFromPath(dk), oflag)
+	if err != nil {
+		return
+	}
+
+	ctx.response["exists"] = exists
+	ctx.response["moved"] = moved
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
+
+func fnMoveReferencedKey(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	sk := treestore.TokenPath(args["src"].(string))
+	dk := treestore.TokenPath(args["dest"].(string))
+	oflag := args["--overwrite"].(bool)
+
+	expireNs := int64(0)
+	if args["--sec"].(bool) {
+		if expireNs, err = strconv.ParseInt(args["sec"].(string), 10, 64); err != nil {
+			return
+		}
+		expireNs = expireNs * (1000 * 1000 * 1000) // seconds to ns
+	} else if args["--ns"].(bool) {
+		if expireNs, err = strconv.ParseInt(args["ns"].(string), 10, 64); err != nil {
+			return
+		}
+	}
+
+	refArgs := args["ref"].([]string)
+	refs := make([]treestore.StoreKey, 0, len(refArgs))
+
+	for _, ref := range refArgs {
+		refs = append(refs, treestore.MakeStoreKeyFromPath(treestore.TokenPath(ref)))
+	}
+
+	exists, moved := ctx.cs.ts.MoveReferencedKey(treestore.MakeStoreKeyFromPath(sk), treestore.MakeStoreKeyFromPath(dk), oflag, expireNs, refs)
 	if err != nil {
 		return
 	}
