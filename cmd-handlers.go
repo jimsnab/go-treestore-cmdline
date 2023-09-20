@@ -109,6 +109,22 @@ func fnSetKey(args cmdline.Values) (err error) {
 	return
 }
 
+func fnSetKeyIfExists(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+	testkey := treestore.TokenPath(args["testkey"].(string))
+
+	address, exists := ctx.cs.ts.SetKeyIfExists(treestore.MakeStoreKeyFromPath(testkey), treestore.MakeStoreKeyFromPath(key))
+	ctx.response["address"] = address
+	ctx.response["exists"] = exists
+
+	if !exists {
+		ctx.cs.tss.dirty.Add(1)
+	}
+
+	return
+}
+
 func valueFromCmdLine(ctx *cmdContext, args cmdline.Values, exactIndex int) (val any, err error) {
 	value := ctx.req.exact[exactIndex]
 	valueType, _ := args["valueType"].(string)

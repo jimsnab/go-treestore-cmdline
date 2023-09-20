@@ -38,6 +38,11 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	)
 
 	cd.cmdLine.RegisterCommand(
+		fnSetKeyIfExists,
+		"setkif <string-testkey> <string-key>?If the test key path exists, ensures key path is stored. Paths are key-escaped, where escaping must escape forward slash as \\s and backslash as \\S.",
+	)
+
+	cd.cmdLine.RegisterCommand(
 		fnSetKeyValue,
 		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes < 32 or > 127 as hex form \\xx",
 		"[--value-type <string-valueType>]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
