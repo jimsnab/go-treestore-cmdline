@@ -259,6 +259,13 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	)
 
 	cd.cmdLine.RegisterCommand(
+		fnStageKeyJson,
+		"stagejson <string-key> <string-json>?Stores the JSON data specified under a unique subkey of the specified key",
+		"[--base64]?The JSON string is base64",
+		"[--straskey]?Treat JSON values that are strings as treestore keys",
+	)
+
+	cd.cmdLine.RegisterCommand(
 		fnCalculateKeyValue,
 		"calc <string-key> <string-expression>?Evaluates the specified expression and stores the result value in the specified key",
 	)

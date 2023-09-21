@@ -1176,6 +1176,35 @@ func fnCalculateKeyValue(args cmdline.Values) (err error) {
 	return
 }
 
+func fnStageKeyJson(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	key := treestore.TokenPath(args["key"].(string))
+
+	var jsonData []byte
+	if args["--base64"].(bool) {
+		if jsonData, err = base64.StdEncoding.DecodeString(args["json"].(string)); err != nil {
+			return
+		}
+	} else {
+		jsonData = []byte(args["json"].(string))
+	}
+
+	opts := treestore.JsonOptions(0)
+	if args["--straskey"].(bool) {
+		opts = treestore.JsonStringValuesAsKeys
+	}
+
+	tempSk, addr, err := ctx.cs.ts.StageKeyJson(treestore.MakeStoreKeyFromPath(key), []byte(jsonData), opts)
+	if err != nil {
+		return
+	}
+
+	ctx.response["tempkey"] = tempSk.Path
+	ctx.response["address"] = addr
+	ctx.cs.tss.dirty.Add(1)
+	return
+}
+
 func fnMoveKey(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	sk := treestore.TokenPath(args["src"].(string))
