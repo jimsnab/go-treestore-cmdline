@@ -532,7 +532,7 @@ func fnGetKeyTtl(args cmdline.Values) (err error) {
 
 	ttl := ctx.cs.ts.GetKeyTtl(treestore.MakeStoreKeyFromPath(key))
 
-	if ttl > 0 {
+	if ttl >= 0 {
 		ctx.response["ttl"] = fmt.Sprintf("%d", ttl)
 	}
 	return
