@@ -179,6 +179,8 @@ github.com/jimsnab/go-treestore v0.0.0-20230920191211-8e725f08f22b h1:KM7eaixsGo
 github.com/jimsnab/go-treestore v0.0.0-20230920191211-8e725f08f22b/go.mod h1:uqG3oqAlvIVIUEWe0k2x9TH7Mv1eDJJzLeJNKaaaTDM=
 github.com/jimsnab/go-treestore v0.0.0-20230921133250-6ebc0efd569f h1:sTHoiZprINGHU4E6SLO9f2PYpfT6Wz/xQsWWJ0MUkBw=
 github.com/jimsnab/go-treestore v0.0.0-20230921133250-6ebc0efd569f/go.mod h1:uqG3oqAlvIVIUEWe0k2x9TH7Mv1eDJJzLeJNKaaaTDM=
+github.com/jimsnab/go-treestore v0.0.0-20230926200541-65e74e335069 h1:Uhjd/UhF0EvJW+mDGXhTkZ9O3ZEnwnG/rfAqQ2wk/Z0=
+github.com/jimsnab/go-treestore v0.0.0-20230926200541-65e74e335069/go.mod h1:uqG3oqAlvIVIUEWe0k2x9TH7Mv1eDJJzLeJNKaaaTDM=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
@@ -193,6 +195,8 @@ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/spf13/afero v1.9.5 h1:stMpOSZFs//0Lv29HduCmli3GUfpFoF3Y1Q/aXj/wVM=
 github.com/spf13/afero v1.9.5/go.mod h1:UBogFpq8E9Hx+xc5CNTTEpTnuHVmXDwZcZcE1eb/UhQ=
+github.com/spf13/afero v1.10.0 h1:EaGW2JJh15aKOejeuJ+wpFSHnbd7GE6Wvp3TsNhb6LY=
+github.com/spf13/afero v1.10.0/go.mod h1:UBogFpq8E9Hx+xc5CNTTEpTnuHVmXDwZcZcE1eb/UhQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
