@@ -54,7 +54,7 @@ func newTreeStoreSet(l lane.Lane, basePath string, appVersion int) (tss *treeSto
 						l.Tracef("loading database %s from %s", name, path)
 						loadErr := ts.Load(l, path)
 						if loadErr != nil {
-							l.Errorf("error loading %s: %s", path, err.Error())
+							l.Errorf("error loading %s: %v", path, loadErr)
 							return loadErr
 						}
 					}
