@@ -61,7 +61,7 @@ type (
 		//
 		// In the JSON response, key paths will be path-escaped, and response values
 		// will be value-escaped.
-		StartServer(endpoint string, port int, persistPath string) error
+		StartServer(endpoint string, port int, persistPath string, appVersion int) error
 
 		// Initiates server termination, if it is running.
 		StopServer() error
@@ -82,7 +82,7 @@ func NewTreeStoreCmdLineServer(l lane.Lane) TreeStoreCmdLineServer {
 	return &eng
 }
 
-func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string) error {
+func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string, appVersion int) error {
 	eng.mu.Lock()
 	defer eng.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string
 		eng.iface = endpoint
 	}
 
-	tss, err := newTreeStoreSet(eng.l, persistPath)
+	tss, err := newTreeStoreSet(eng.l, persistPath, appVersion)
 	if err != nil {
 		return err
 	}

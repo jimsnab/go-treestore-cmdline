@@ -14,19 +14,21 @@ import (
 
 type (
 	treeStoreSet struct {
-		mu       sync.Mutex
-		basePath string
-		dbs      map[string]*treestore.TreeStore
-		users    map[string]*treeStoreUser
-		dirty    atomic.Int32
+		mu         sync.Mutex
+		appVersion int
+		basePath   string
+		dbs        map[string]*treestore.TreeStore
+		users      map[string]*treeStoreUser
+		dirty      atomic.Int32
 	}
 )
 
-func newTreeStoreSet(l lane.Lane, basePath string) (tss *treeStoreSet, err error) {
+func newTreeStoreSet(l lane.Lane, basePath string, appVersion int) (tss *treeStoreSet, err error) {
 	tss = &treeStoreSet{
-		basePath: basePath,
-		dbs:      map[string]*treestore.TreeStore{},
-		users:    map[string]*treeStoreUser{"default": newTreeStoreUser()},
+		basePath:   basePath,
+		appVersion: appVersion,
+		dbs:        map[string]*treestore.TreeStore{},
+		users:      map[string]*treeStoreUser{"default": newTreeStoreUser()},
 	}
 
 	tss.createDbUnlocked(l, "main")
@@ -97,7 +99,7 @@ func (tss *treeStoreSet) treeStoreFileName(index string) string {
 func (tss *treeStoreSet) createDbUnlocked(l lane.Lane, index string) (ts *treestore.TreeStore, valid bool) {
 	ts, exists := tss.dbs[index]
 	if !exists {
-		ts = treestore.NewTreeStore(l.Derive())
+		ts = treestore.NewTreeStore(l.Derive(), tss.appVersion)
 		tss.dbs[index] = ts
 	}
 
