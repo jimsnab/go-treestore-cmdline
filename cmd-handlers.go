@@ -1270,3 +1270,10 @@ func fnMoveReferencedKey(args cmdline.Values) (err error) {
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
+
+func fnPurgeDatabase(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	ctx.cs.ts.Purge()
+	ctx.cs.tss.dirty.Add(1)
+	return
+}

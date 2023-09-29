@@ -286,6 +286,12 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"[--overwrite]?Overwrite the destination, if it exists",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnPurgeDatabase,
+		"purge?Discards all the data in the active database",
+		"--destructive?Required flag to provide a speed bump on this easy way to lose data",
+	)
+
 	return cd
 }
 
