@@ -303,6 +303,11 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"deleteidx <string-datakey> <string-indexkey>?Removes the index definition <indexkey> from <datakey>, and deletes the index content.",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnGetIndex,
+		"getidx <string-datakey>?Retrieves the index definition stored in <datakey>, if one exists.",
+	)
+
 	return cd
 }
 

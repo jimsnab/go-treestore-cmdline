@@ -1318,3 +1318,17 @@ func fnDeleteIndex(args cmdline.Values) (err error) {
 
 	return
 }
+
+func fnGetIndex(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	dp := treestore.TokenPath(args["datakey"].(string))
+
+	dpSk := treestore.MakeStoreKeyFromPath(dp)
+
+	id := ctx.cs.ts.GetIndex(dpSk)
+	if id != nil {
+		ctx.response["index_definitions"] = id
+	}
+
+	return
+}
