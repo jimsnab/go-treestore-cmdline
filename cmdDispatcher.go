@@ -295,7 +295,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 	cd.cmdLine.RegisterCommand(
 		fnCreateIndex,
 		"createidx <string-datakey> <string-indexkey>?Establishes an index for a ID-based data key <datakey>, index content stored under <indexkey>.",
-		"*[<string-fields>]?Index paths are made by extracting key segments specified by <fields>. The field's value, obtained from <datakey>/<uniqueid>/<field>, is appended to <indexkey>. The <field> subpath can contain * to match any data.",
+		"*--field <string-fields>?Index paths are made by extracting key segments specified by <fields>. The field's value, obtained from <datakey>/<uniqueid>/<field>, is appended to <indexkey>. The <field> subpath can contain * to match any data.",
 	)
 
 	cd.cmdLine.RegisterCommand(
