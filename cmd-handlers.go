@@ -1327,7 +1327,7 @@ func fnGetIndex(args cmdline.Values) (err error) {
 
 	id := ctx.cs.ts.GetIndex(dpSk)
 	if id != nil {
-		ctx.response["index_definitions"] = id
+		ctx.response["indexDefinitions"] = id
 	}
 
 	return
