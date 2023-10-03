@@ -1277,3 +1277,44 @@ func fnPurgeDatabase(args cmdline.Values) (err error) {
 	ctx.cs.tss.dirty.Add(1)
 	return
 }
+
+func fnCreateIndex(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	dp := treestore.TokenPath(args["datakey"].(string))
+	idx := treestore.TokenPath(args["indexkey"].(string))
+	fieldsArg, specified := args["fields"].([]string)
+	if !specified {
+		fieldsArg = []string{}
+	}
+
+	fields := make([]treestore.RecordSubPath, 0, len(fieldsArg))
+
+	for _, field := range fieldsArg {
+		tokens := tokenPathToTokenSetEscapeAsterisk(treestore.TokenPath(field))
+		fields = append(fields, treestore.RecordSubPath(tokens))
+	}
+
+	dpSk := treestore.MakeStoreKeyFromPath(dp)
+	idxSk := treestore.MakeStoreKeyFromPath(idx)
+
+	recordKeyExists, indexCreated := ctx.cs.ts.CreateIndex(dpSk, idxSk, fields)
+	ctx.response["recordKeyExists"] = recordKeyExists
+	ctx.response["indexCreated"] = indexCreated
+
+	return
+}
+
+func fnDeleteIndex(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	dp := treestore.TokenPath(args["datakey"].(string))
+	idx := treestore.TokenPath(args["indexkey"].(string))
+
+	dpSk := treestore.MakeStoreKeyFromPath(dp)
+	idxSk := treestore.MakeStoreKeyFromPath(idx)
+
+	recordKeyExists, indexRemoved := ctx.cs.ts.DeleteIndex(dpSk, idxSk)
+	ctx.response["recordKeyExists"] = recordKeyExists
+	ctx.response["indexRemoved"] = indexRemoved
+
+	return
+}

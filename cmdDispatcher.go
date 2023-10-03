@@ -292,6 +292,16 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 		"--destructive?Required flag to provide a speed bump on this easy way to lose data",
 	)
 
+	cd.cmdLine.RegisterCommand(
+		fnCreateIndex,
+		"createidx <string-datakey> <string-indexkey> *<string-fields>?Establishes an index for a ID-based data key <datakey>, index content stored under <indexkey>. Index paths are made by extracting key segments specified by <fields>, where a field is a subpath of <datakey>/<uniqueid>. A subpath can contain * to match any data.",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnDeleteIndex,
+		"deleteidx <string-datakey> <string-indexkey>?Removes the index definition <indexkey> from <datakey>, and deletes the index content.",
+	)
+
 	return cd
 }
 
