@@ -23,8 +23,8 @@ type (
 	}
 
 	OpLogHandler interface {
-		OpLogRequest(reqNumber uint64, req rawRequest) (err error)
-		OpLogResult(reqNumber uint64, req map[string]any) (err error)
+		OpLogRequest(reqNumber uint64, req [][]byte) (err error)
+		OpLogResult(reqNumber uint64, response map[string]any) (err error)
 	}
 )
 
@@ -326,7 +326,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRequest) (output []byte, err error) {
 	reqNumber := cd.requestNumber.Add(1)
 	if cd.opLog != nil {
-		cd.opLog.OpLogRequest(reqNumber, req)
+		cd.opLog.OpLogRequest(reqNumber, req.exact)
 	}
 
 	ctx := &cmdContext{
