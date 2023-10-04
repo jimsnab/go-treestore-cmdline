@@ -61,7 +61,7 @@ type (
 		//
 		// In the JSON response, key paths will be path-escaped, and response values
 		// will be value-escaped.
-		StartServer(endpoint string, port int, persistPath string, appVersion int) error
+		StartServer(endpoint string, port int, persistPath string, appVersion int, opLog OpLogHandler) error
 
 		// Initiates server termination, if it is running.
 		StopServer() error
@@ -82,7 +82,7 @@ func NewTreeStoreCmdLineServer(l lane.Lane) TreeStoreCmdLineServer {
 	return &eng
 }
 
-func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string, appVersion int) error {
+func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string, appVersion int, opLog OpLogHandler) error {
 	eng.mu.Lock()
 	defer eng.mu.Unlock()
 
@@ -113,7 +113,7 @@ func (eng *mainEngine) StartServer(endpoint string, port int, persistPath string
 	eng.periodicSave()
 
 	// start accepting connections and processing them
-	err = eng.startServer()
+	err = eng.startServer(opLog)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (eng *mainEngine) periodicSave() {
 	}
 }
 
-func (eng *mainEngine) startServer() error {
+func (eng *mainEngine) startServer(opLog OpLogHandler) error {
 	// establish socket service
 	var err error
 
@@ -212,7 +212,7 @@ func (eng *mainEngine) startServer() error {
 	}
 	eng.l.Infof("listening on %s", eng.server.Addr().String())
 
-	dispatcher := newCmdDispatcher(eng.port, eng.iface, eng.tss)
+	dispatcher := newCmdDispatcher(eng.port, eng.iface, eng.tss, opLog)
 
 	go func() {
 		// accept connections and process commands

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/jimsnab/go-cmdline"
 	"github.com/jimsnab/go-lane"
@@ -12,20 +14,30 @@ import (
 
 type (
 	cmdDispatcher struct {
-		port    int
-		iface   string
-		tss     *treeStoreSet
-		cmdLine *cmdline.CommandLine
+		port          int
+		iface         string
+		tss           *treeStoreSet
+		cmdLine       *cmdline.CommandLine
+		opLog         OpLogHandler
+		requestNumber atomic.Uint64
+	}
+
+	OpLogHandler interface {
+		OpLogRequest(reqNumber uint64, req rawRequest) (err error)
+		OpLogResult(reqNumber uint64, req map[string]any) (err error)
 	}
 )
 
-func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDispatcher {
+func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog OpLogHandler) *cmdDispatcher {
 	cd := &cmdDispatcher{
 		port:    port,
 		iface:   netInterface,
 		tss:     tss,
 		cmdLine: cmdline.NewCommandLine(),
+		opLog:   opLog,
 	}
+
+	cd.requestNumber.Store(uint64(time.Now().UnixNano()))
 
 	cd.cmdLine.RegisterCommand(
 		fnHelp,
@@ -312,6 +324,11 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet) *cmdDisp
 }
 
 func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRequest) (output []byte, err error) {
+	reqNumber := cd.requestNumber.Add(1)
+	if cd.opLog != nil {
+		cd.opLog.OpLogRequest(reqNumber, req)
+	}
+
 	ctx := &cmdContext{
 		l:        l,
 		response: map[string]any{},
@@ -352,6 +369,12 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 		ctx.response["error"] = err.Error()
 	}
 
+	if cd.opLog != nil {
+		if err = cd.opLog.OpLogResult(reqNumber, ctx.response); err != nil {
+			ctx.response["oplog_error"] = err.Error()
+		}
+	}
+
 	// can't use json.Marshal because it imposes some HTML safeguards that are not relevant to json
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
@@ -365,5 +388,6 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 	if ll >= lane.LogLevelTrace {
 		l.Tracef("response: %s", string(output))
 	}
+
 	return
 }
