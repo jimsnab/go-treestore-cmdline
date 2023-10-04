@@ -49,6 +49,11 @@ type (
 		CurrentType   string                   `json:"current_type,omitempty"`
 		Relationships []treestore.StoreAddress `json:"relationships,omitempty"`
 	}
+
+	indexDefinitionJson struct {
+		IndexKey   string   `json:"index_key"`
+		FieldPaths []string `json:"field_paths"`
+	}
 )
 
 func fnHelp(args cmdline.Values) (err error) {
@@ -1287,11 +1292,11 @@ func fnCreateIndex(args cmdline.Values) (err error) {
 		fieldsArg = []string{}
 	}
 
-	fields := make([]treestore.RecordSubPath, 0, len(fieldsArg))
+	fields := make([]treestore.SubPath, 0, len(fieldsArg))
 
 	for _, field := range fieldsArg {
-		tokens := tokenPathToTokenSetEscapeAsterisk(treestore.TokenPath(field))
-		fields = append(fields, treestore.RecordSubPath(tokens))
+		subpath := treestore.UnescapeSubPath(treestore.EscapedSubPath(field))
+		fields = append(fields, subpath)
 	}
 
 	dpSk := treestore.MakeStoreKeyFromPath(dp)
@@ -1327,7 +1332,18 @@ func fnGetIndex(args cmdline.Values) (err error) {
 
 	id := ctx.cs.ts.GetIndex(dpSk)
 	if id != nil {
-		ctx.response["indexDefinitions"] = id
+		defs := make([]indexDefinitionJson, 0, len(id))
+		for _, def := range id {
+			idj := indexDefinitionJson{
+				IndexKey:   string(def.IndexSk.Path),
+				FieldPaths: make([]string, 0, len(def.Fields)),
+			}
+			for _, field := range def.Fields {
+				idj.FieldPaths = append(idj.FieldPaths, string(treestore.EscapeSubPath(field)))
+			}
+			defs = append(defs, idj)
+		}
+		ctx.response["indexDefinitions"] = defs
 	}
 
 	return
