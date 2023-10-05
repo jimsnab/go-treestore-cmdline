@@ -33,6 +33,7 @@ func newTreeStoreSet(l lane.Lane, basePath string, appVersion int) (tss *treeSto
 
 	tss.createDbUnlocked(l, "main")
 	if basePath != "" {
+		dbs := 0
 		l.Tracef("loading database(s) from base path %s", basePath)
 
 		// Search the file system for persisted data, and load each data store
@@ -56,6 +57,8 @@ func newTreeStoreSet(l lane.Lane, basePath string, appVersion int) (tss *treeSto
 						if loadErr != nil {
 							l.Errorf("error loading %s: %v", path, loadErr)
 							return loadErr
+						} else {
+							dbs++
 						}
 					}
 				}
@@ -68,6 +71,8 @@ func newTreeStoreSet(l lane.Lane, basePath string, appVersion int) (tss *treeSto
 			tss = nil
 			return
 		}
+
+		l.Tracef("databases loaded: %d", dbs)
 	}
 
 	return
