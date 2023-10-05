@@ -24,7 +24,7 @@ type (
 
 	OpLogHandler interface {
 		OpLogRequest(reqNumber uint64, modify bool, req [][]byte) (err error)
-		OpLogResult(reqNumber uint64, res []byte) (err error)
+		OpLogResult(reqNumber uint64, modify bool, res []byte) (err error)
 	}
 )
 
@@ -371,8 +371,8 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 	}
 
 	reqNumber := cd.requestNumber.Add(1)
+	modify := false
 	if cd.opLog != nil {
-		modify := false
 		if len(req.args) > 0 {
 			_, modify = writeCommands[req.args[0]]
 		}
@@ -394,7 +394,7 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 	output = bytes.TrimRight(buffer.Bytes(), "\n")
 
 	if cd.opLog != nil {
-		if err = cd.opLog.OpLogResult(reqNumber, output); err != nil {
+		if err = cd.opLog.OpLogResult(reqNumber, modify, output); err != nil {
 			return
 		}
 	}
