@@ -107,7 +107,11 @@ func (cc *clientCxn) RequestClose() {
 			// in a blocking read, close the socket
 			cc.cxn.Close()
 		}
-		cc.queueStateChange(csTerminate, nil)
+		if cc.cxn == nil {
+			cc.cs.unregister()
+		} else {
+			cc.queueStateChange(csTerminate, nil)
+		}
 	}
 }
 
