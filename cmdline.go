@@ -1,6 +1,7 @@
 package treestore_cmdline
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net"
@@ -24,6 +25,8 @@ type (
 		terminating     bool
 		port            int
 		iface           string
+		dispatcher      *cmdDispatcher
+		directCs        *clientState
 	}
 
 	TreeStoreCmdLineServer interface {
@@ -71,6 +74,9 @@ type (
 
 		// Returns the server address
 		ServerAddr() string
+
+		// Send a raw command
+		Dispatch(lines [][]byte) (reply []byte, err error)
 	}
 )
 
@@ -212,7 +218,7 @@ func (eng *mainEngine) startServer(opLog OpLogHandler) error {
 	}
 	eng.l.Infof("listening on %s", eng.server.Addr().String())
 
-	dispatcher := newCmdDispatcher(eng.port, eng.iface, eng.tss, opLog)
+	eng.dispatcher = newCmdDispatcher(eng.port, eng.iface, eng.tss, opLog)
 
 	go func() {
 		// accept connections and process commands
@@ -228,7 +234,7 @@ func (eng *mainEngine) startServer(opLog OpLogHandler) error {
 			eng.cxns = append(eng.cxns, connection)
 			eng.mu.Unlock()
 			eng.l.Infof("client connected: %s", connection.RemoteAddr().String())
-			newClientCxn(eng.l, connection, dispatcher)
+			newClientCxn(eng.l, connection, eng.dispatcher)
 		}
 	}()
 
@@ -250,4 +256,38 @@ func (eng *mainEngine) ServerAddr() string {
 	}
 
 	return eng.server.Addr().String()
+}
+
+func (eng *mainEngine) Dispatch(escapedArgs [][]byte) (reply []byte, err error) {
+	if eng.server == nil || eng.dispatcher == nil {
+		err = errors.New("server not running")
+		return
+	}
+
+	if eng.directCs == nil {
+		cc := &clientCxn{
+			cxn:         nil,
+			started:     time.Now(),
+			socketState: csNone,
+			csceCh:      make(chan *clientStateEvent, 3),
+		}
+
+		eng.directCs = newClientState(eng.l, cc, eng.dispatcher)
+	}
+
+	req := rawRequest{
+		exact: escapedArgs,
+		args:  make([]string, 0, len(escapedArgs)),
+	}
+
+	for _, escapedArg := range escapedArgs {
+		req.args = append(req.args, string(escapedArg))
+		if !bytes.Contains(escapedArg, []byte("\\")) {
+			req.exact = append(req.exact, escapedArg)
+		} else {
+			req.exact = append(req.exact, valueUnescape(string(escapedArg)))
+		}
+	}
+
+	return eng.dispatcher.dispatchHandler(eng.l, eng.directCs, req)
 }
