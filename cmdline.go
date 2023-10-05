@@ -220,6 +220,15 @@ func (eng *mainEngine) startServer(opLog OpLogHandler) error {
 
 	eng.dispatcher = newCmdDispatcher(eng.port, eng.iface, eng.tss, opLog)
 
+	directCc := &clientCxn{
+		cxn:         nil,
+		started:     time.Now(),
+		socketState: csNone,
+		csceCh:      make(chan *clientStateEvent, 3),
+	}
+
+	eng.directCs = newClientState(eng.l, directCc, eng.dispatcher)
+
 	go func() {
 		// accept connections and process commands
 		for {
@@ -262,17 +271,6 @@ func (eng *mainEngine) Dispatch(escapedArgs [][]byte) (reply []byte, err error) 
 	if eng.server == nil || eng.dispatcher == nil {
 		err = errors.New("server not running")
 		return
-	}
-
-	if eng.directCs == nil {
-		cc := &clientCxn{
-			cxn:         nil,
-			started:     time.Now(),
-			socketState: csNone,
-			csceCh:      make(chan *clientStateEvent, 3),
-		}
-
-		eng.directCs = newClientState(eng.l, cc, eng.dispatcher)
 	}
 
 	req := rawRequest{
