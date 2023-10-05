@@ -23,10 +23,20 @@ type (
 	}
 
 	OpLogHandler interface {
-		OpLogRequest(reqNumber uint64, req [][]byte) (err error)
+		OpLogRequest(reqNumber uint64, modify bool, req [][]byte) (err error)
 		OpLogResult(reqNumber uint64, res []byte) (err error)
 	}
 )
+
+var writeCommands = map[string]struct{}{}
+
+func (cd *cmdDispatcher) registerWriteCommand(handler cmdline.CommandHandler, specList ...string) {
+	parts := strings.Split(specList[0], " ")
+	parts = strings.Split(parts[0], "?")
+	writeCommands[parts[0]] = struct{}{}
+
+	cd.cmdLine.RegisterCommand(handler, specList...)
+}
 
 func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog OpLogHandler) *cmdDispatcher {
 	cd := &cmdDispatcher{
@@ -44,23 +54,23 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"help?List the available commands",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKey,
 		"setk <string-key>?Ensures key path is stored (key-escaped), where escaping must escape forward slash as \\s and backslash as \\S.",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyIfExists,
 		"setkif <string-testkey> <string-key>?If the test key path exists, ensures key path is stored. Paths are key-escaped, where escaping must escape forward slash as \\s and backslash as \\S.",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyValue,
 		"setv <string-key> <string-value>?Sets value (value-escaped) at key path (key-escaped), where value escaping must escape backslash and bytes < 32 or > 127 as hex form \\xx",
 		"[--value-type <string-valueType>]?If value is not a byte array, specifies its type (the types that go supports) - string, int, uint, float64, complex128, bool, etc.",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetExStr,
 		"setstr <string-key> <string-value>?Convenience function that performs setex of a string value",
 		"[--mx]?Must-Exist flag: perform operation only if the value exists",
@@ -70,7 +80,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--relationships <string-relationships>]?Associates a comma-separated list of store addresses with the key; the list can be an empty string",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetExInt,
 		"setint <string-key> <int-value>?Convenience function that performs setex of a 32-bit integer",
 		"[--mx]?Must-Exist flag: perform operation only if the value exists",
@@ -80,7 +90,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--relationships <string-relationships>]?Associates a comma-separated list of store addresses with the key; the list can be an empty string",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetEx,
 		"setex <string-key>?Sets a key path (key-escaped), offering several options",
 		"[--value <string-value>]?Sets a value (value-escaped) at the key path; if not specified an existing value is not modified",
@@ -101,28 +111,28 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--detailed]?Provide each match with details of the key node such as has_children and relationships, otherwise provide a list of matching key paths",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnClearKeyMetadata,
 		"resetmeta <string-key>?Removes metadata from the specified key",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnClearMetadataAttribute,
 		"delmeta <string-key> <string-attribute>?Removes the specific metadata attribute from the key",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnDeleteKey,
 		"delk <string-key>?Removes the key path, including its data",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnDeleteKeyWithValue,
 		"delv <string-key>?Removes the key path, if it has a value",
 		"[--clean]?Removes each parent key node that becomes empty after deletion",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnDeleteKeyTree,
 		"deltree <string-key>?Removes the key path, including its data and children",
 	)
@@ -183,27 +193,27 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"getk <string-key>?Walks the treestore and returns the key's address",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyTtlSec,
 		"expirek <string-key> <string-ttl>?Assigns a new expiration timestamp, in seconds; ttl is the Unix epoch if positive, or relative number of seconds if negative",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyTtlNs,
 		"expirekns <string-key> <string-ttl>?Assigns a new expiration timestamp, in nanoseconds; ttl is the Unix epoch if positive, or relative number of seconds if negative",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyValueTtlSec,
 		"expirev <string-key> <string-ttl>?Assigns a new expiration timestamp, in seconds, of a key that has a value; ttl is the Unix epoch if positive, or relative number of seconds if negative",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyValueTtlNs,
 		"expirevns <string-key> <string-ttl>?Assigns a new expiration timestamp, in nanoseconds, of a key that has a value; ttl is the Unix epoch if positive, or relative number of seconds if negative",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetMetadataAttribute,
 		"setmeta <string-key> <string-attribute> <string-value>?Sets or replaces a metadata attribute value for the specified key",
 	)
@@ -229,7 +239,7 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--base64]?Export the JSON as base64",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnImport,
 		"import <string-key> <string-json>?Loads the specified JSON and stores the data in the tree store",
 		"[--base64]?The JSON string is base64",
@@ -242,53 +252,53 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnSetKeyJson,
 		"setjson <string-key> <string-json>?Creates or replaces the key tree using the JSON data specified",
 		"[--base64]?The JSON string is base64",
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnCreateKeyJson,
 		"createjson <string-key> <string-json>?Creates the key tree using the JSON data specified; does not overwrite existing data",
 		"[--base64]?The JSON string is base64",
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnReplaceKeyJson,
 		"replacejson <string-key> <string-json>?Replaces the key tree using the JSON data specified; requires existing data",
 		"[--base64]?The JSON string is base64",
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnMergeJson,
 		"mergejson <string-key> <string-json>?Overlays the key tree using the JSON data specified into existing data (if any)",
 		"[--base64]?The JSON string is base64",
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnStageKeyJson,
 		"stagejson <string-key> <string-json>?Stores the JSON data specified under a unique subkey of the specified key",
 		"[--base64]?The JSON string is base64",
 		"[--straskey]?Treat JSON values that are strings as treestore keys",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnCalculateKeyValue,
 		"calc <string-key> <string-expression>?Evaluates the specified expression and stores the result value in the specified key",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnMoveKey,
 		"mv <string-src> <string-dest>?Moves the source key to the destination in an atomic operation",
 		"[--overwrite]?Overwrite the destination, if it exists",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnMoveReferencedKey,
 		"mvref <string-src> <string-dest>?Moves the source key to the destination in an atomic operation",
 		"*[--ref <string-ref>]?Creates or updates a reference key that maintains a relationship to dest (multiple --ref args are supported)",
@@ -298,19 +308,19 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		"[--overwrite]?Overwrite the destination, if it exists",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnPurgeDatabase,
 		"purge?Discards all the data in the active database",
 		"--destructive?Required flag to provide a speed bump on this easy way to lose data",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnCreateIndex,
 		"createidx <string-datakey> <string-indexkey>?Establishes an index for a ID-based data key <datakey>, index content stored under <indexkey>.",
 		"*--field <string-fields>?Index paths are made by extracting key segments specified by <fields>. The field's value, obtained from <datakey>/<uniqueid>/<field>, is appended to <indexkey>. The <field> subpath can contain * to match any data.",
 	)
 
-	cd.cmdLine.RegisterCommand(
+	cd.registerWriteCommand(
 		fnDeleteIndex,
 		"deleteidx <string-datakey> <string-indexkey>?Removes the index definition <indexkey> from <datakey>, and deletes the index content.",
 	)
@@ -324,11 +334,6 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 }
 
 func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRequest) (output []byte, err error) {
-	reqNumber := cd.requestNumber.Add(1)
-	if cd.opLog != nil {
-		cd.opLog.OpLogRequest(reqNumber, req.exact)
-	}
-
 	ctx := &cmdContext{
 		l:        l,
 		response: map[string]any{},
@@ -363,6 +368,15 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 		}
 
 		l.Trace(printable.String())
+	}
+
+	reqNumber := cd.requestNumber.Add(1)
+	if cd.opLog != nil {
+		modify := false
+		if len(req.args) > 0 {
+			_, modify = writeCommands[req.args[0]]
+		}
+		cd.opLog.OpLogRequest(reqNumber, modify, req.exact)
 	}
 
 	if err = cd.cmdLine.ProcessWithContext(ctx, req.args); err != nil {
