@@ -481,14 +481,12 @@ func fnKeys(args cmdline.Values) (err error) {
 	keys := ctx.cs.ts.GetMatchingKeys(skPattern, startAt, limit, true)
 
 	var sb strings.Builder
-	for i, patSeg := range skPattern.Tokens {
+	for _, patSeg := range skPattern.Tokens {
 		str := treestore.TokenSegmentToString(patSeg)
 		if strings.Contains(str, "*") {
 			break
 		}
-		if i > 0 {
-			sb.WriteString("/")
-		}
+		sb.WriteString("/")
 		sb.WriteString(str)
 	}
 
