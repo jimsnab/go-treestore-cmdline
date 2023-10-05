@@ -24,7 +24,7 @@ type (
 
 	OpLogHandler interface {
 		OpLogRequest(reqNumber uint64, req [][]byte) (err error)
-		OpLogResult(reqNumber uint64, response map[string]any) (err error)
+		OpLogResult(reqNumber uint64, res []byte) (err error)
 	}
 )
 
@@ -369,12 +369,6 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 		ctx.response["error"] = err.Error()
 	}
 
-	if cd.opLog != nil {
-		if err = cd.opLog.OpLogResult(reqNumber, ctx.response); err != nil {
-			ctx.response["oplog_error"] = err.Error()
-		}
-	}
-
 	// can't use json.Marshal because it imposes some HTML safeguards that are not relevant to json
 	buffer := &bytes.Buffer{}
 	enc := json.NewEncoder(buffer)
@@ -384,6 +378,12 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 		return
 	}
 	output = bytes.TrimRight(buffer.Bytes(), "\n")
+
+	if cd.opLog != nil {
+		if err = cd.opLog.OpLogResult(reqNumber, output); err != nil {
+			return
+		}
+	}
 
 	if ll >= lane.LogLevelTrace {
 		l.Tracef("response: %s", string(output))
