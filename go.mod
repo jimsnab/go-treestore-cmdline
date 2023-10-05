@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/jimsnab/go-cmdline v1.2.0
 	github.com/jimsnab/go-lane v1.5.0
-	github.com/jimsnab/go-treestore v0.0.0-20231004013211-ebe3fcaaa0d4
+	github.com/jimsnab/go-treestore v0.0.0-20231005171837-4493f7d3f6a1
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/jimsnab/go-simpleutils v1.0.14 // indirect
 	github.com/jimsnab/go-toolprinter v1.0.11 // indirect
 	github.com/spf13/afero v1.10.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 )
