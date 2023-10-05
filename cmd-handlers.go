@@ -426,8 +426,10 @@ func fnListKeys(args cmdline.Values) (err error) {
 		limit = args["limit"].(int)
 	}
 
+	leaves, _ := args["--leaves"].(bool)
+
 	skPattern := treestore.MakeStoreKeyFromPath(pattern)
-	keys := ctx.cs.ts.GetMatchingKeys(skPattern, startAt, limit)
+	keys := ctx.cs.ts.GetMatchingKeys(skPattern, startAt, limit, leaves)
 
 	if args["--detailed"].(bool) {
 		kmj := make([]*keyMatchJson, 0, len(keys))
@@ -456,6 +458,51 @@ func fnListKeys(args cmdline.Values) (err error) {
 		}
 		ctx.response["keypaths"] = keypaths
 	}
+
+	return
+}
+
+func fnKeys(args cmdline.Values) (err error) {
+	ctx := args[""].(*cmdContext)
+	pattern := treestore.TokenPath(args["pattern"].(string))
+
+	startAt := 0
+	limit := 10000
+
+	if args["--start"].(bool) {
+		startAt = args["start"].(int)
+	}
+
+	if args["--limit"].(bool) {
+		limit = args["limit"].(int)
+	}
+
+	skPattern := treestore.MakeStoreKeyFromPath(pattern)
+	keys := ctx.cs.ts.GetMatchingKeys(skPattern, startAt, limit, true)
+
+	var sb strings.Builder
+	for i, patSeg := range skPattern.Tokens {
+		str := treestore.TokenSegmentToString(patSeg)
+		if strings.Contains(str, "*") {
+			break
+		}
+		if i > 0 {
+			sb.WriteString("/")
+		}
+		sb.WriteString(str)
+	}
+
+	prefix := sb.String()
+
+	keypaths := make([]string, 0, len(keys))
+	for _, k := range keys {
+		trimmed := strings.TrimPrefix(string(k.Key), prefix)
+		if trimmed != string(k.Key) {
+			trimmed = strings.TrimPrefix(trimmed, "/")
+		}
+		keypaths = append(keypaths, trimmed)
+	}
+	ctx.response["matches"] = keypaths
 
 	return
 }

@@ -105,10 +105,18 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 
 	cd.cmdLine.RegisterCommand(
 		fnListKeys,
-		"lsk <string-pattern>?Escaped key pattern starting with a slash",
+		"lsk <string-pattern>?Lists keys matching the escaped key pattern",
 		"[--start <int-start>]?Zero-based starting index, default is 0",
 		"[--limit <int-limit>]?Maximum number of keys to return, default is 10000",
+		"[--leaves]?List the leaf keys only",
 		"[--detailed]?Provide each match with details of the key node such as has_children and relationships, otherwise provide a list of matching key paths",
+	)
+
+	cd.cmdLine.RegisterCommand(
+		fnKeys,
+		"keys <string-pattern>?Lists leaf keys matching the escaped key pattern (alias for lsk --leaves), pattern prefix is removed from the returned list",
+		"[--start <int-start>]?Zero-based starting index, default is 0",
+		"[--limit <int-limit>]?Maximum number of keys to return, default is 10000",
 	)
 
 	cd.registerWriteCommand(
