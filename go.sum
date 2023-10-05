@@ -209,6 +209,8 @@ github.com/jimsnab/go-treestore v0.0.0-20231005172749-a4451a664fad h1:q7qsSb7qnz
 github.com/jimsnab/go-treestore v0.0.0-20231005172749-a4451a664fad/go.mod h1:snLpulIX6uL2p21Wa848xg9X76eiYj9Y0Y2nhSJCn1E=
 github.com/jimsnab/go-treestore v0.0.0-20231005173823-9d450aa67b95 h1:dzhnFa5zNsBGdP7u7pb26h6SI2+TTbQq6QbMJWyER1E=
 github.com/jimsnab/go-treestore v0.0.0-20231005173823-9d450aa67b95/go.mod h1:AOTkDyyGjf9aSV6prYQp3wuaOjlYDKuypIHsVDbdIsA=
+github.com/jimsnab/go-treestore v0.0.0-20231005174239-e5d1b4024a40 h1:8mNqAVs1dWMlFzQ0jN+s/KgrLapHJjvqRsL7Me6gv2w=
+github.com/jimsnab/go-treestore v0.0.0-20231005174239-e5d1b4024a40/go.mod h1:AOTkDyyGjf9aSV6prYQp3wuaOjlYDKuypIHsVDbdIsA=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
