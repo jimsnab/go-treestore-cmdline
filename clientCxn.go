@@ -108,7 +108,7 @@ func (cc *clientCxn) RequestClose() {
 			cc.cxn.Close()
 		}
 		if cc.cxn == nil {
-			cc.cs.unregister()
+			cc.cs.unregisterLocked()
 		} else {
 			cc.queueStateChange(csTerminate, nil)
 		}

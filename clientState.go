@@ -101,6 +101,10 @@ func (cs *clientState) unregister() {
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
 
+	cs.unregisterLocked()
+}
+
+func (cs *clientState) unregisterLocked() {
 	delete(clients, cs.id)
 }
 
