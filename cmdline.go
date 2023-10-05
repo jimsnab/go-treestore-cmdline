@@ -229,6 +229,8 @@ func (eng *mainEngine) startServer(opLog OpLogHandler) error {
 
 	eng.directCs = newClientState(eng.l, directCc, eng.dispatcher)
 
+	directCc.cs = eng.directCs
+
 	go func() {
 		// accept connections and process commands
 		for {
