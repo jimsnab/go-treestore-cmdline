@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,7 +20,8 @@ type (
 		tss           *treeStoreSet
 		cmdLine       *cmdline.CommandLine
 		opLog         OpLogHandler
-		requestNumber atomic.Uint64
+		reqMu         sync.Mutex
+		requestNumber uint64
 	}
 
 	OpLogHandler interface {
@@ -46,8 +48,6 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 		cmdLine: cmdline.NewCommandLine(),
 		opLog:   opLog,
 	}
-
-	cd.requestNumber.Store(uint64(time.Now().UnixNano()))
 
 	cd.cmdLine.RegisterCommand(
 		fnHelp,
@@ -378,7 +378,15 @@ func (cd *cmdDispatcher) dispatchHandler(l lane.Lane, cs *clientState, req rawRe
 		l.Trace(printable.String())
 	}
 
-	reqNumber := cd.requestNumber.Add(1)
+	// ensure unique request number
+	reqNumber := uint64(time.Now().UnixNano())
+	cd.reqMu.Lock()
+	if reqNumber <= cd.requestNumber {
+		reqNumber = cd.requestNumber + 1
+	}
+	cd.requestNumber = reqNumber
+	cd.reqMu.Unlock()
+
 	modify := false
 	if cd.opLog != nil {
 		if len(req.args) > 0 {
