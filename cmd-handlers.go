@@ -50,9 +50,9 @@ type (
 		Relationships []treestore.StoreAddress `json:"relationships,omitempty"`
 	}
 
-	indexDefinitionJson struct {
-		IndexKey   string   `json:"index_key"`
-		FieldPaths []string `json:"field_paths"`
+	autoLinkDefinitionJson struct {
+		AutoLinkKey string   `json:"autolink_key"`
+		FieldPaths  []string `json:"field_paths"`
 	}
 )
 
@@ -1328,10 +1328,10 @@ func fnPurgeDatabase(args cmdline.Values) (err error) {
 	return
 }
 
-func fnCreateIndex(args cmdline.Values) (err error) {
+func fnDefineAutoLinkKey(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	dp := treestore.TokenPath(args["datakey"].(string))
-	idx := treestore.TokenPath(args["indexkey"].(string))
+	idx := treestore.TokenPath(args["autolinkkey"].(string))
 	fieldsArg, specified := args["fields"].([]string)
 	if !specified {
 		fieldsArg = []string{}
@@ -1347,48 +1347,48 @@ func fnCreateIndex(args cmdline.Values) (err error) {
 	dpSk := treestore.MakeStoreKeyFromPath(dp)
 	idxSk := treestore.MakeStoreKeyFromPath(idx)
 
-	recordKeyExists, indexCreated := ctx.cs.ts.CreateIndex(dpSk, idxSk, fields)
+	recordKeyExists, autoLinkCreated := ctx.cs.ts.DefineAutoLinkKey(dpSk, idxSk, fields)
 	ctx.response["recordKeyExists"] = recordKeyExists
-	ctx.response["indexCreated"] = indexCreated
+	ctx.response["autoLinkCreated"] = autoLinkCreated
 
 	return
 }
 
-func fnDeleteIndex(args cmdline.Values) (err error) {
+func fnRemoveAutoLinkKey(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	dp := treestore.TokenPath(args["datakey"].(string))
-	idx := treestore.TokenPath(args["indexkey"].(string))
+	idx := treestore.TokenPath(args["autolinkkey"].(string))
 
 	dpSk := treestore.MakeStoreKeyFromPath(dp)
 	idxSk := treestore.MakeStoreKeyFromPath(idx)
 
-	recordKeyExists, indexRemoved := ctx.cs.ts.DeleteIndex(dpSk, idxSk)
+	recordKeyExists, autoLinkRemoved := ctx.cs.ts.RemoveAutoLinkKey(dpSk, idxSk)
 	ctx.response["recordKeyExists"] = recordKeyExists
-	ctx.response["indexRemoved"] = indexRemoved
+	ctx.response["autoLinkRemoved"] = autoLinkRemoved
 
 	return
 }
 
-func fnGetIndex(args cmdline.Values) (err error) {
+func fnGetAutoLinkDefinition(args cmdline.Values) (err error) {
 	ctx := args[""].(*cmdContext)
 	dp := treestore.TokenPath(args["datakey"].(string))
 
 	dpSk := treestore.MakeStoreKeyFromPath(dp)
 
-	id := ctx.cs.ts.GetIndex(dpSk)
+	id := ctx.cs.ts.GetAutoLinkDefinition(dpSk)
 	if id != nil {
-		defs := make([]indexDefinitionJson, 0, len(id))
+		defs := make([]autoLinkDefinitionJson, 0, len(id))
 		for _, def := range id {
-			idj := indexDefinitionJson{
-				IndexKey:   string(def.IndexSk.Path),
-				FieldPaths: make([]string, 0, len(def.Fields)),
+			idj := autoLinkDefinitionJson{
+				AutoLinkKey: string(def.AutoLinkSk.Path),
+				FieldPaths:  make([]string, 0, len(def.Fields)),
 			}
 			for _, field := range def.Fields {
 				idj.FieldPaths = append(idj.FieldPaths, string(treestore.EscapeSubPath(field)))
 			}
 			defs = append(defs, idj)
 		}
-		ctx.response["indexDefinitions"] = defs
+		ctx.response["autoLinkDefinitions"] = defs
 	}
 
 	return

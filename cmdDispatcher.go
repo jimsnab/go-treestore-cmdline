@@ -322,19 +322,19 @@ func newCmdDispatcher(port int, netInterface string, tss *treeStoreSet, opLog Op
 	)
 
 	cd.registerWriteCommand(
-		fnCreateIndex,
-		"createidx <string-datakey> <string-indexkey>?Establishes an index for a ID-based data key <datakey>, index content stored under <indexkey>.",
-		"*--field <string-fields>?Index paths are made by extracting key segments specified by <fields>. The field's value, obtained from <datakey>/<uniqueid>/<field>, is appended to <indexkey>. The <field> subpath can contain * to match any data.",
+		fnDefineAutoLinkKey,
+		"autolink <string-datakey> <string-autolinkkey>?Establishes an auto-link key for a ID-based data key <datakey>, links stored under <autolinkkey>.",
+		"*--field <string-fields>?Auto-link paths are made by extracting key segments specified by <fields>. The field's value, obtained from <datakey>/<uniqueid>/<field>, is appended to <autolinkkey>. The <field> subpath can contain * to match any data.",
 	)
 
 	cd.registerWriteCommand(
-		fnDeleteIndex,
-		"deleteidx <string-datakey> <string-indexkey>?Removes the index definition <indexkey> from <datakey>, and deletes the index content.",
+		fnRemoveAutoLinkKey,
+		"rmautolink <string-datakey> <string-autolinkkey>?Removes the auto-link key <autolinkkey> from <datakey>, and deletes the links.",
 	)
 
 	cd.cmdLine.RegisterCommand(
-		fnGetIndex,
-		"getidx <string-datakey>?Retrieves the index definition stored in <datakey>, if one exists.",
+		fnGetAutoLinkDefinition,
+		"getautolink <string-datakey>?Retrieves the auto-link definition stored in <datakey>, if one exists.",
 	)
 
 	return cd
