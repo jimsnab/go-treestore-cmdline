@@ -128,6 +128,8 @@ github.com/jimsnab/go-cmdline v1.3.0 h1:ZNHJY5LpUripmKwFf992ibVhypbKBPQ/hugGme7R
 github.com/jimsnab/go-cmdline v1.3.0/go.mod h1:W4QckR2J+vceYZfMVspM86H6ej8B+ZhhidlJKlRyB5w=
 github.com/jimsnab/go-cmdline v1.4.0 h1:1UdkmEbV6EnGphRu/y4XplUrCuQS5bIZwPtdvzAgk/U=
 github.com/jimsnab/go-cmdline v1.4.0/go.mod h1:ciBqhoTGYRnQi0TWHOCkoQo62NCfYg1OXz4K6rOxhbk=
+github.com/jimsnab/go-cmdline v1.4.1 h1:KgYjK4RukYiIWkzCSCDyx7pxYv+oEXbi4en2HGU7Lxo=
+github.com/jimsnab/go-cmdline v1.4.1/go.mod h1:ciBqhoTGYRnQi0TWHOCkoQo62NCfYg1OXz4K6rOxhbk=
 github.com/jimsnab/go-lane v1.3.0 h1:FjaFeHySg8uEtQJcQCE90DRJtLS44UsDu8plNjZZF0M=
 github.com/jimsnab/go-lane v1.3.0/go.mod h1:gQZM3DYgcOvGY9GM0XqNYAdKPKHn87gAsQcCGxsf8fA=
 github.com/jimsnab/go-lane v1.4.0 h1:dwhlT1/8QSbYBXODI6Ye/V2j9UJb1Sv8ShrMx49Ax+c=
